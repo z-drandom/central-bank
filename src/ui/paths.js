@@ -47,7 +47,7 @@ export function createPaths(app) {
         if (i) { cum *= p.edges[i - 1]; crumbs.append(h('span', { class: 'arrow' }, '→')); }
         const s = g.specs.get(id);
         crumbs.append(h('button', { class: 'crumb path-node', type: 'button', onclick: () => app.openCard(id) },
-          s.short ?? s.label, h('small', { class: `num ${cum >= 0 ? 'up' : 'down'}` }, fmtDelta(s, cum, { unit: false }))));
+          s.short ?? s.label, h('small', { class: `num ${cum >= 0 ? 'up' : 'down'}` }, fmtDelta(s, cum))));
       });
       list.append(h('div', { class: 'path-row' }, crumbs, h('b', { class: `num path-sum ${p.prod >= 0 ? 'up' : 'down'}` }, dB(p.prod * step))));
     }

@@ -1,6 +1,9 @@
 // 折线图与分解柱状图（SVG 字符串）。点位带 data-node，可点开公式卡片。
 import { esc } from './dom.js';
 
+// 刻度与标签里的负号统一用减号 −（与全站数字格式一致）
+const neg = (x) => String(x).replace(/^-/, '−');
+
 function niceTicks(lo, hi, n = 5) {
   const span = hi - lo || 1;
   const step0 = span / n;
@@ -33,7 +36,7 @@ export function lineChart({ series, width = 640, height = 260, yFmt = (v) => `${
   const Y = (y) => m.t + (1 - (y - lo) / (hi - lo)) * H;
   let s = '';
   for (const t of ticks) {
-    s += `<line class="grid-line" x1="${m.l}" x2="${m.l + W}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axis-t" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${esc(yFmt(t))}</text>`;
+    s += `<line class="grid-line" x1="${m.l}" x2="${m.l + W}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axis-t" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${esc(neg(yFmt(t)))}</text>`;
   }
   for (let x = x0; x <= x1; x++) {
     if ((x - x0) % 2 === 0 || (x === x1 && (x1 - x0) % 2 === 0)) s += `<text class="axis-t" x="${X(x)}" y="${m.t + H + 17}" text-anchor="middle">${x}</text>`;
@@ -55,11 +58,11 @@ export function lineChart({ series, width = 640, height = 260, yFmt = (v) => `${
     }
     s += `<path d="${path(se.pts)}" fill="none" class="${se.cls}" stroke-width="2.4" stroke-linejoin="round"/>`;
     for (const p of se.pts) {
-      s += `<circle data-node="${p.id}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p === se.pts.at(-1) ? 4.5 : 3}" class="${se.cls.replace('stroke', 'fill')}"><title>${p.x}：${esc(yFmt(p.y))}</title></circle>`;
+      s += `<circle data-node="${p.id}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p === se.pts.at(-1) ? 4.5 : 3}" class="${se.cls.replace('stroke', 'fill')}"><title>${p.x}：${esc(neg(yFmt(p.y)))}</title></circle>`;
     }
     const last = se.pts.at(-1);
     const ly = endY.get(si);
-    s += `<text data-node="${last.id}" x="${X(last.x) + 8}" y="${ly + 4}" class="t-name" style="font-size:12px">${esc(yFmt(last.y))}</text>`;
+    s += `<text data-node="${last.id}" x="${X(last.x) + 8}" y="${ly + 4}" class="t-name" style="font-size:12px">${esc(neg(yFmt(last.y)))}</text>`;
     s += `<text x="${X(last.x) + 8}" y="${ly + 18}" class="t-small">${esc(se.label)}</text>`;
   }
   return `<svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(title)}">${s}</svg>`;
@@ -90,7 +93,7 @@ export function stackChart({ years, parts, net, width = 640, height = 240, yFmt 
   const bw = (W / years.length) * 0.56;
   const X = (i) => m.l + (W / years.length) * (i + 0.5);
   let s = '';
-  for (const t of ticks) s += `<line class="grid-line" x1="${m.l}" x2="${m.l + W}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axis-t" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${esc(yFmt(t))}</text>`;
+  for (const t of ticks) s += `<line class="grid-line" x1="${m.l}" x2="${m.l + W}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axis-t" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${esc(neg(yFmt(t)))}</text>`;
   s += `<line x1="${m.l}" x2="${m.l + W}" y1="${Y(0)}" y2="${Y(0)}" class="stroke-muted"/>`;
   years.forEach((yr, i) => {
     let p = 0, n = 0;
@@ -101,9 +104,9 @@ export function stackChart({ years, parts, net, width = 640, height = 240, yFmt 
       if (v >= 0) p = y1; else n = y1;
       const top = Y(Math.max(y0, y1));
       const hh = Math.abs(Y(y0) - Y(y1));
-      s += `<rect data-node="${id}" x="${(X(i) - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(hh, 0.5).toFixed(1)}" class="${part.cls}"><title>${yr} ${esc(part.label)}：${esc(yFmt(v))} ${unit}</title></rect>`;
+      s += `<rect data-node="${id}" x="${(X(i) - bw / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(hh, 0.5).toFixed(1)}" class="${part.cls}"><title>${yr} ${esc(part.label)}：${esc(neg(yFmt(v)))} ${unit}</title></rect>`;
     }
-    s += `<circle data-node="${net[i].id}" cx="${X(i)}" cy="${Y(net[i].v)}" r="4.2" class="fill-ink" stroke="var(--surface)" stroke-width="1.5"><title>${yr} 负债率变动：${esc(yFmt(net[i].v))} ${unit}</title></circle>`;
+    s += `<circle data-node="${net[i].id}" cx="${X(i)}" cy="${Y(net[i].v)}" r="4.2" class="fill-ink" stroke="var(--surface)" stroke-width="1.5"><title>${yr} 负债率变动：${esc(neg(yFmt(net[i].v)))} ${unit}</title></circle>`;
     s += `<text class="axis-t" x="${X(i)}" y="${m.t + H + 17}" text-anchor="middle">${String(yr).slice(2)}</text>`;
   });
   return `<svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(title)}">${s}</svg>`;
@@ -125,7 +128,7 @@ export function fanChart({ years, q, current, width = 760, height = 280, refs = 
   const Y = (y) => m.t + (1 - (y - lo) / (hi - lo)) * H;
   const band = (a, b, cls) => `<path d="${years.map((y, i) => `${i ? 'L' : 'M'}${X(y).toFixed(1)},${Y(b[i]).toFixed(1)}`).join('')}${[...years].reverse().map((y, i) => `L${X(y).toFixed(1)},${Y(a[years.length - 1 - i]).toFixed(1)}`).join('')}Z" class="${cls}"/>`;
   let s = '';
-  for (const t of ticks) s += `<line class="grid-line" x1="${m.l}" x2="${m.l + W}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axis-t" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${esc(yFmt(t))}</text>`;
+  for (const t of ticks) s += `<line class="grid-line" x1="${m.l}" x2="${m.l + W}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axis-t" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${esc(neg(yFmt(t)))}</text>`;
   years.forEach((x, i) => { if (i % 2 === 0 || (i === years.length - 1 && i % 2 === 0)) s += `<text class="axis-t" x="${X(x)}" y="${m.t + H + 17}" text-anchor="middle">${x}</text>`; });
   for (const r of refs) s += `<line x1="${m.l}" x2="${m.l + W}" y1="${Y(r.y)}" y2="${Y(r.y)}" stroke="var(--gold)" stroke-dasharray="4 4"/><text x="${m.l + W + 4}" y="${Y(r.y) + 4}" class="t-small" style="fill:var(--gold)">${esc(r.label)}</text>`;
   s += band(q.p10, q.p90, 'fan-outer');
@@ -135,8 +138,8 @@ export function fanChart({ years, q, current, width = 760, height = 280, refs = 
   for (const p of current) s += `<circle data-node="${p.id}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3" class="fill-xfer"/>`;
   const li = years.length - 1;
   const lx = X(x1) + 8;
-  s += `<text x="${lx}" y="${Y(q.p90[li]) + 4}" class="t-small">90%：${esc(yFmt(q.p90[li]))}</text>`;
-  s += `<text x="${lx}" y="${Y(current.at(-1).y) + 4}" class="t-name" style="font-size:12px">当前 ${esc(yFmt(current.at(-1).y))}</text>`;
-  s += `<text x="${lx}" y="${Y(q.p10[li]) + 4}" class="t-small">10%：${esc(yFmt(q.p10[li]))}</text>`;
+  s += `<text x="${lx}" y="${Y(q.p90[li]) + 4}" class="t-small">90%：${esc(neg(yFmt(q.p90[li])))}</text>`;
+  s += `<text x="${lx}" y="${Y(current.at(-1).y) + 4}" class="t-name" style="font-size:12px">当前 ${esc(neg(yFmt(current.at(-1).y)))}</text>`;
+  s += `<text x="${lx}" y="${Y(q.p10[li]) + 4}" class="t-small">10%：${esc(neg(yFmt(q.p10[li])))}</text>`;
   return `<svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(title)}">${s}</svg>`;
 }

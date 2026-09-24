@@ -189,13 +189,16 @@ export function createCard(app) {
     const val = (x) => x.phi ?? x.alone;
     const max = Math.max(...r.rows.map((x) => Math.abs(val(x))), Math.abs(r.interaction), 1e-12);
     const ul = h('div', { class: 'contrib' });
+    const tiny = 1e-9 * Math.max(1, Math.abs(r.total));
+    const dt = (d) => (Math.abs(d) <= tiny ? '0' : fmtDelta(s, d, { unit: false }));
     for (const x of r.rows) {
       const ps = g.specs.get(x.id);
       const v = val(x);
+      const zero = Math.abs(v) <= tiny;
       ul.append(h('button', { class: 'contrib-row', onclick: () => open(x.id) },
-        h('span', { class: 'c-name' }, ps.label, h('small', {}, ` 单独改：${fmtDelta(s, x.alone, { unit: false })}`)),
+        h('span', { class: 'c-name' }, ps.label, h('small', {}, zero ? ' 在上游，但影响在公式里正好抵消' : ` 单独改：${dt(x.alone)}`)),
         h('span', { class: 'c-bar' }, h('i', { class: v >= 0 ? 'pos' : 'neg', style: { width: `${(Math.abs(v) / max) * 100}%` } })),
-        h('span', { class: `c-val num ${v >= 0 ? 'up' : 'down'}` }, fmtDelta(s, v, { unit: false })),
+        h('span', { class: `c-val num ${zero ? '' : v >= 0 ? 'up' : 'down'}` }, dt(v)),
       ));
     }
     if (!r.exact) {

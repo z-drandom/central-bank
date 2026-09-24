@@ -17,3 +17,11 @@ test('分析摘要：含改动、规则、代入式和可复现的情景代码',
   s2.fromScenario(decodeScenario(code));
   assert.equal(s2.values.d26, sim.values.d26);
 });
+
+test('分析摘要：改了两个以上参数时，关键结果附 Shapley 归因', () => {
+  const sim = new Sim();
+  sim.setMany({ dr26: 0.05, g_nom: 0.07 });
+  const t = brief(sim);
+  assert.match(t, /按参数归因（Shapley）：/);
+  assert.match(t, /目标赤字率 \+/);
+});

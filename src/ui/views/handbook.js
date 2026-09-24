@@ -1,5 +1,6 @@
 // 公式手册：全部公式、全部假设、与原图逐项对账
 import { h, esc } from '../dom.js';
+import { toCSV } from '../../model/export.js';
 import { formulaLines, fmt, kindOf, symHTML } from '../../model/format.js';
 import { MODULES } from '../../model/specs.js';
 import { reconcile } from '../../model/reconcile.js';
@@ -82,7 +83,24 @@ export default function handbook(app) {
   );
   panes.gloss.append(h('h3', {}, '名词解释', h('small', {}, `${GLOSSARY.length} 个词条；右侧数字点开可看公式`)), glossBox);
   panes.cross.append(h('h3', {}, '跨图连接', h('small', {}, '所有"一张图的数字用到了另一张图的数字"的公式。点格子筛选，点公式看卡片')), crossBox);
-  panes.fx.append(h('h3', {}, '全部公式', h('small', {}, '每条公式都是模拟器实际计算用的那一条（同一段表达式既用来算，也用来显示）')), search, filters, list);
+  const csvMsg = h('span', { class: 'hint', role: 'status' });
+  let csvArea = null;
+  const csvBtn = h('button', { class: 'btn', type: 'button', onclick: async () => {
+    const text = toCSV(app.sim);
+    csvArea?.remove();
+    csvArea = null;
+    try { await navigator.clipboard.writeText(text); csvMsg.textContent = `已复制 ${text.split('\n').length - 1} 行，可直接粘贴到表格软件`; }
+    catch {
+      csvArea = h('textarea', { class: 'search copy-area', rows: 8, readonly: true, 'aria-label': 'CSV 文本' }, text);
+      csvBtn.parentElement.after(csvArea);
+      csvArea.focus(); csvArea.select();
+      csvMsg.textContent = '浏览器不允许自动复制，文本已选中';
+    }
+  } }, '复制全部数字（CSV）');
+  panes.fx.append(h('h3', {}, '全部公式', h('small', {}, '每条公式都是模拟器实际计算用的那一条（同一段表达式既用来算，也用来显示）')),
+    h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', margin: '0 0 8px' } }, csvBtn, csvMsg,
+      h('span', { class: 'hint' }, '含编号、名称、类型、原图基线、当前值、变化量和公式；数值按存储单位（亿元 / 万亿元 / 小数比率）')),
+    search, filters, list);
   panes.assume.append(h('h3', {}, '假设与校准参数清单', h('small', {}, '图中没有、为了把四张图连起来而引入的参数。全部可调')), assumeBox);
   panes.rec.append(h('h3', {}, '与原图逐项对账', h('small', {}, '基线下，模拟器对原图每一个数字的复现情况')), recBox);
   const el = h('div', {}, tabs, panes.gloss, panes.limits, panes.lab, panes.fx, panes.cross, panes.assume, panes.rec);

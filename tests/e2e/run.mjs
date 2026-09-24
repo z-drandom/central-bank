@@ -574,6 +574,20 @@ await t('历史：列出走过的状态，点一下回到那里，且可撤销',
   await page.close();
 });
 
+await t('公式手册：复制全部数字（CSV），剪贴板被拒时给出可选中文本', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#book', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('denied')) } }); __fiscal.set('t_vat', 60000); });
+  await page.locator('[data-k="fx"]').click();
+  await page.locator('button', { hasText: '复制全部数字（CSV）' }).click();
+  await page.waitForTimeout(150);
+  const csv = await page.locator('#book-fx .copy-area, .copy-area').last().inputValue();
+  assert.match(csv, /^id,名称,模块/);
+  assert.match(csv, /\nt_vat,.*,68947,60000,-8947,/);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

@@ -353,13 +353,21 @@ export function createPhase(app) {
     }).observe(plot);
   }
 
-  // 其他页面（测验）可以直接打开某张预设图
+  // 其他页面（测验、龙卷风图）可以直接打开某张预设图，或指定目标和两个参数
+  const reveal = () => requestAnimationFrame(() => el.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
   app.showPhase = (id) => {
     if (!PHASE_PRESETS.some((p) => p.id === id)) return;
     preset = id;
     cursor = null;
     update();
-    requestAnimationFrame(() => el.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+    reveal();
+  };
+  app.showPhaseCustom = ({ target, x, y }) => {
+    preset = null;
+    Object.assign(custom, { target, x, y });
+    cursor = null;
+    update();
+    reveal();
   };
 
   return { el, update, get state() { return last; } };

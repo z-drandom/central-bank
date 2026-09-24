@@ -103,13 +103,15 @@ export default function sensitivity(app) {
       }).join('')}</tbody></table>`;
   }
   const phase = createPhase(app);
+  let top2 = [];
+  const top2Btn = h('button', { class: 'btn', type: 'button', id: 'sens-top2', onclick: () => { if (top2.length === 2) app.showPhaseCustom({ target, x: top2[0], y: top2[1] }); } }, '把前两名放进相图 ↑');
   const el = h('div', { style: { display: 'grid', gap: '16px' } },
     matSheet,
     phase.el,
     gsSheet,
     h('div', { class: 'sheet' },
       h('h3', {}, '谁对这个指标影响最大', h('small', {}, '在当前参数和规则下，把每个参数单独上下拨动一步，其余不动')),
-      h('div', { style: { display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' } }, h('b', {}, '目标：'), sel, modeSeg),
+      h('div', { style: { display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' } }, h('b', {}, '目标：'), sel, modeSeg, top2Btn),
       info,
       chart,
       h('div', { class: 'legend' },
@@ -130,6 +132,8 @@ export default function sensitivity(app) {
     const g = app.sim.graph;
     const tspec = g.specs.get(target);
     const r = tornado(g, app.sim.inputs, target, { mode, limit: 22 });
+    top2 = r.rows.slice(0, 2).map((x) => x.id);
+    top2Btn.disabled = top2.length < 2;
     info.innerHTML = `当前值 <b>${esc(fmt(tspec, r.now))}</b>。它的上游共有 ${r.total} 个可调参数，下面按影响大小列出前 ${r.rows.length} 个。`;
     const max = Math.max(...r.rows.flatMap((x) => [Math.abs(x.up), Math.abs(x.down)]), 1e-12);
     const pctTarget = dispKind(tspec) === 'pct';

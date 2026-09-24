@@ -79,6 +79,7 @@ export function createApp(root) {
     },
     applyPreset(p) {
       record(true);
+      if (p.fresh) sim.resetAll(); // 从原图基线出发（关卡、事件卡）；仍可撤销回之前的状态
       if (p.modes) for (const [k, v] of Object.entries(p.modes)) sim.setMode(k, v);
       if (p.reset) sim.reset();
       sim.apply(p.changes ?? []);

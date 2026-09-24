@@ -408,6 +408,23 @@ await t('测验：交互项题可答，载入情景后打开对应相图，且�
   await page.close();
 });
 
+await t('龙卷风图的前两名一键放进相图', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#sens', { waitUntil: 'domcontentloaded' });
+  await page.selectOption('#sens-target', 'self26');
+  await page.waitForTimeout(300);
+  const first = await page.locator('.tor-row').first().getAttribute('data-node');
+  const second = await page.locator('.tor-row').nth(1).getAttribute('data-node');
+  await page.locator('#sens-top2').click();
+  await page.waitForTimeout(300);
+  assert.equal(await page.locator('#ph-target').inputValue(), 'self26');
+  assert.equal(await page.locator('#ph-x').inputValue(), first);
+  assert.equal(await page.locator('#ph-y').inputValue(), second);
+  assert.equal(await page.locator('#phase .chip.on').count(), 0, '自选组合不应高亮预设');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

@@ -19,8 +19,7 @@ function shuffleOrder(n, seedStr) {
 }
 
 export function startChallenge(app, ch) {
-  app.sim.resetAll();
-  app.applyPreset({ label: ch.title, modes: ch.setup.modes, changes: ch.setup.changes });
+  app.applyPreset({ fresh: true, label: ch.title, modes: ch.setup.modes, changes: ch.setup.changes });
   app.challengeStart = app.sim.snapshot();
   app.activeChallenge = ch;
   app.go(ch.tab);
@@ -92,9 +91,8 @@ export default function play(app) {
     const ts = r.sim.spec(r.target);
     const tab = { oth26: 'b26', drate26: 'b26', el26: 'b26', f1_other: 'fb', p_d_2035: 'proj' }[r.target] ?? 'overview';
     const applyEvent = (fix) => {
-      app.sim.resetAll();
-      app.applyPreset({ label: `事件：${ev.title}`, modes: ev.modes, changes: ev.changes, go: tab });
-      if (fix) app.set(fix.id, fix.to);
+      const changes = fix ? [...ev.changes, { id: fix.id, set: fix.to }] : ev.changes;
+      app.applyPreset({ fresh: true, label: `事件：${ev.title}${fix ? '（含对冲方案）' : ''}`, modes: ev.modes, changes, go: tab });
     };
     evBox.innerHTML = '';
     evBox.append(h('div', { class: 'event-card' },

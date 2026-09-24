@@ -1,6 +1,7 @@
 // 总览：四张图如何连成一台机器
 import { h, esc } from '../dom.js';
 import { val, deltaParts, isChanged } from '../common.js';
+import { fmtDelta } from '../../model/format.js';
 import { load, save } from '../dom.js';
 import { createScenarios } from '../scenarios.js';
 import { STORIES } from '../../model/stories.js';
@@ -33,7 +34,7 @@ const LINKS = [
 function clusterSVG(app, c) {
   const ids = app.sim.changedIds().filter((id) => app.sim.spec(id).mod === c.id);
   const n = ids.length;
-  let s = `<g class="ov-cl" data-tab="${c.tab}" role="button" tabindex="0" aria-label="打开${esc(c.title)}">
+  let s = `<g class="ov-clw" data-cl="${c.id}"><g class="ov-cl" data-tab="${c.tab}" role="button" tabindex="0" aria-label="打开${esc(c.title)}">
     <rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.hh}" rx="10" class="ov-box ${n ? 'on' : ''}"/>
     <text x="${c.x + 16}" y="${c.y + 28}" class="t-title">${c.img ? `图${c.img} ` : ''}${esc(c.title)}</text>
     <text x="${c.x + 16}" y="${c.y + 46}" class="t-small">${esc(c.sub)}</text>`;
@@ -51,7 +52,56 @@ function clusterSVG(app, c) {
       ${dp ? `<text x="${x}" y="${y + 42}" class="${dp.up ? 't-up' : 't-down'}">${esc(dp.text)}</text>` : ''}
     </g>`;
   });
-  return s;
+  return s + '</g>';
+}
+
+/**
+ * 传导回放的顺序：每个方框按"其中最早变化的节点"的拓扑序号排，每条亮起的箭头按"终点最早变化的节点"排。
+ * 拓扑序保证：一条箭头总排在它的起点方框之后。
+ */
+export function propagationSteps(app) {
+  const sim = app.sim;
+  const rank = sim.graph.rank;
+  const changed = sim.changedIds();
+  if (!changed.length) return [];
+  const out = [];
+  for (const c of CLUSTERS) {
+    const ids = changed.filter((id) => sim.spec(id).mod === c.id);
+    if (!ids.length) continue;
+    out.push({ kind: 'cl', c, r: Math.min(...ids.map((id) => rank.get(id))), ids });
+  }
+  LINKS.forEach((l, k) => {
+    if (!linkActive(app, l)) return;
+    const tos = l.to.filter((id) => sim.has(id) && isChanged(app, id));
+    const froms = l.from.filter((id) => sim.has(id) && isChanged(app, id));
+    const r = tos.length ? Math.min(...tos.map((id) => rank.get(id))) : Math.max(...froms.map((id) => rank.get(id))) + 0.5;
+    out.push({ kind: 'ln', l, k, r, tos });
+  });
+  // 方框里也可能有不经图上箭头就变化的数（例如宏观参数直接影响的）；为了让画面顺着箭头走，
+  // 有箭头进入的方框排在第一条进入它的箭头之后
+  const firstIn = new Map();
+  for (const st of out) {
+    if (st.kind !== 'ln' || !st.tos.length) continue;
+    const m = sim.spec(st.tos[0]).mod;
+    firstIn.set(m, Math.min(firstIn.get(m) ?? Infinity, st.r));
+  }
+  for (const st of out) if (st.kind === 'cl' && firstIn.has(st.c.id) && st.r <= firstIn.get(st.c.id)) st.r = firstIn.get(st.c.id) + 0.1;
+  out.sort((a, b) => a.r - b.r);
+  return out;
+}
+
+function stepText(app, st, i) {
+  const sim = app.sim;
+  const d = (id) => `${sim.spec(id).label} <b class="num ${app.v[id] >= app.b[id] ? 'up' : 'down'}">${esc(fmtDelta(sim.spec(id), app.v[id] - app.b[id]))}</b>`;
+  if (st.kind === 'cl') {
+    const mine = st.ids.filter((id) => sim.isInput(id));
+    const shown = st.c.kpis.map(([id]) => id).filter((id) => st.ids.includes(id)).slice(0, 2);
+    const lead = mine.length ? `你改的${mine.slice(0, 2).map((id) => `「${esc(sim.spec(id).label)}」`).join('、')}${mine.length > 2 ? '等' : ''}在这里。` : '变化传到这里。';
+    return `<b>${i + 1}. ${st.c.img ? `图${st.c.img} ` : ''}${esc(st.c.title)}</b>：${lead}共 ${st.ids.length} 个数变了${shown.length ? `，例如 ${shown.map(d).join('；')}` : ''}。`;
+  }
+  const lbl = typeof st.l.label === 'function' ? st.l.label(app.v) : st.l.label;
+  const node = sim.has(st.l.node) && isChanged(app, st.l.node) ? st.l.node : st.tos[0];
+  return `<b>${i + 1}. 沿箭头「${esc(lbl)}」${st.l.sub ? `（${esc(st.l.sub)}）` : ''}</b>${st.l.title ? `：${esc(st.l.title)}` : ''}${node ? `。${d(node)}` : ''}`;
 }
 
 function unitOf(app, id) {
@@ -61,9 +111,13 @@ function unitOf(app, id) {
   return '';
 }
 
-function linkSVG(app, l) {
-  const active = l.from.some((id) => app.sim.has(id) && isChanged(app, id)) && (l.to.length === 0 || l.to.some((id) => app.sim.has(id) && isChanged(app, id)));
-  return `<g data-node="${l.node}" class="ov-link ${active ? 'on' : ''}">
+function linkActive(app, l) {
+  return l.from.some((id) => app.sim.has(id) && isChanged(app, id)) && (l.to.length === 0 || l.to.some((id) => app.sim.has(id) && isChanged(app, id)));
+}
+
+function linkSVG(app, l, k) {
+  const active = linkActive(app, l);
+  return `<g data-node="${l.node}" data-ln="${k}" class="ov-link ${active ? 'on' : ''}">
     ${l.title ? `<title>${esc(l.title)}</title>` : ''}<path d="${l.d}" class="ov-path" marker-end="url(#ov-ah${active ? '-on' : ''})"/>
     ${active ? `<path d="${l.d}" class="ov-pulse"/>` : ''}
     <text x="${l.lx}" y="${l.ly}" text-anchor="${l.anchor ?? 'middle'}" class="ov-lbl">${esc(typeof l.label === 'function' ? l.label(app.v) : l.label)}</text>
@@ -83,6 +137,56 @@ export default function overview(app) {
     if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); app.go(c.dataset.tab); }
   });
   const story = h('ol', { class: 'story' });
+  // 传导回放
+  let play = null; // { steps, k, timer, key }
+  const playCap = h('div', { class: 'ov-cap', role: 'status', 'aria-live': 'polite' });
+  const playBtn = h('button', { class: 'btn primary', type: 'button', onclick: () => (play ? stopPlay() : startPlay(true)) }, '▶ 回放传导路径');
+  const stepBtn = h('button', { class: 'btn', type: 'button', onclick: () => { if (play) { play.auto = false; stepPlay(); } else startPlay(false); }, title: '一站一站地看' }, '逐站 ›');
+  const changedKey = () => JSON.stringify(app.sim.toScenario());
+  function startPlay(auto) {
+    const steps = propagationSteps(app);
+    if (!steps.length) { playCap.textContent = '还没有改动：先拧一个旋钮，再回放它的传导路径。'; return; }
+    play = { steps, k: -1, key: changedKey(), timer: null, auto };
+    playBtn.textContent = '■ 停止';
+    stepPlay();
+  }
+  function stepPlay() {
+    if (!play) return;
+    clearTimeout(play.timer);
+    play.k++;
+    if (play.k >= play.steps.length) { finishPlay(); return; }
+    paintPlay();
+    playCap.innerHTML = stepText(app, play.steps[play.k], play.k) + `<span class="hint">　${play.k + 1} / ${play.steps.length}</span>`;
+    if (play.auto) play.timer = setTimeout(stepPlay, 1700);
+  }
+  function finishPlay() {
+    const n = play.steps.length;
+    clearTimeout(play.timer);
+    play = null;
+    paintPlay();
+    playBtn.textContent = '▶ 回放传导路径';
+    playCap.innerHTML = `回放结束：变化经过 ${n} 站。点任意数字看它的公式，或到页面底部的"传导链"看完整清单。`;
+  }
+  function stopPlay() {
+    if (!play) return;
+    clearTimeout(play.timer);
+    play = null;
+    paintPlay();
+    playBtn.textContent = '▶ 回放传导路径';
+    playCap.textContent = '';
+  }
+  function paintPlay() {
+    const svg = map.querySelector('svg');
+    if (!svg) return;
+    svg.classList.toggle('ov-playing', !!play);
+    for (const e of svg.querySelectorAll('.ov-reached, .ov-now')) e.classList.remove('ov-reached', 'ov-now');
+    if (!play) return;
+    play.steps.slice(0, play.k + 1).forEach((st, i) => {
+      const e = st.kind === 'cl' ? svg.querySelector(`[data-cl="${st.c.id}"]`) : svg.querySelector(`[data-ln="${st.k}"]`);
+      e?.classList.add('ov-reached');
+      if (i === play.k) e?.classList.add('ov-now');
+    });
+  }
   const scen = createScenarios(app);
   const TOUR = 'fiscal-sandbox-tour-v1';
   const tour = h('div', { class: 'sheet tour', hidden: !!load(TOUR, false) },
@@ -112,6 +216,7 @@ export default function overview(app) {
       h('h3', {}, '四张图是一台机器', h('small', {}, '方框 = 一张图；箭头上写着连接它们的公式。拖动右侧旋钮，看变化沿哪几条箭头传播（亮起的箭头）')),
       map,
       h('div', { class: 'swipe-hint' }, '← 左右滑动查看完整图 →'),
+      h('div', { class: 'ov-play' }, playBtn, stepBtn, playCap),
     ),
     stories,
     h('div', { class: 'sheet' }, h('h3', {}, '钱是怎么转一圈的'), story),
@@ -124,7 +229,9 @@ export default function overview(app) {
       <marker id="ov-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="fill-muted"/></marker>
       <marker id="ov-ah-on" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="fill-def"/></marker>
     </defs>`;
-    map.innerHTML = `<svg viewBox="0 -24 1100 674" role="group" aria-label="四张图之间的公式连接">${defs}${CLUSTERS.map((c) => clusterSVG(app, c)).join('')}${LINKS.map((l) => linkSVG(app, l)).join('')}</svg>`;
+    map.innerHTML = `<svg viewBox="0 -24 1100 674" role="group" aria-label="四张图之间的公式连接">${defs}${CLUSTERS.map((c) => clusterSVG(app, c)).join('')}${LINKS.map((l, k) => linkSVG(app, l, k)).join('')}</svg>`;
+    if (play && play.key !== changedKey()) stopPlay();
+    paintPlay();
     const v = app.v;
     const T = (id, o) => `<b class="num" data-node="${id}" style="cursor:pointer;border-bottom:1px dotted var(--ink-3)">${esc(val(app, id, o))}</b>`;
     story.innerHTML = [

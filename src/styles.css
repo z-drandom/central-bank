@@ -760,3 +760,13 @@ kbd { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--rule-
 .ph-table summary { cursor: pointer; color: var(--ink-2); }
 .legend i.lg-line { height: 3px; width: 16px; vertical-align: 3px; }
 .legend i.lg-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }
+
+/* 总览：传导回放 */
+.ov-play { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-top: 10px; }
+.ov-cap { flex: 1 1 320px; min-height: 2.6em; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+.ov-cap b { color: var(--ink); }
+.ov-playing .ov-clw, .ov-playing .ov-link { opacity: 0.18; transition: opacity 0.35s; }
+.ov-playing .ov-reached { opacity: 1; }
+.ov-playing .ov-now .ov-box { stroke: var(--def); stroke-width: 3.5; }
+.ov-playing .ov-now .ov-path { stroke-width: 4; }
+@media (prefers-reduced-motion: reduce) { .ov-playing .ov-clw, .ov-playing .ov-link { transition: none; } }

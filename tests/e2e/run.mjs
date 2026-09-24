@@ -365,6 +365,27 @@ await t('双参数相图：切预设、点格子应用两个参数（含规则�
   await page.close();
 });
 
+await t('总览：传导回放逐站点亮，改参数后自动停止', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#overview', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => __fiscal.set('t_vat', 60000));
+  await page.waitForTimeout(300);
+  const step = page.locator('.ov-play button', { hasText: '逐站' });
+  await step.click();
+  assert.equal(await page.locator('#main svg.ov-playing').count(), 1);
+  assert.equal(await page.locator('#main .ov-reached').count(), 1);
+  assert.match(await page.locator('.ov-cap').innerText(), /图③ 2025 年执行/);
+  await step.click();
+  assert.match(await page.locator('.ov-cap').innerText(), /×\(1 \+ g\)/);
+  await step.click();
+  assert.equal(await page.locator('#main .ov-reached').count(), 3);
+  await page.evaluate(() => __fiscal.set('t_vat', 61000));
+  await page.waitForTimeout(300);
+  assert.equal(await page.locator('#main svg.ov-playing').count(), 0, '状态变了应停止回放');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

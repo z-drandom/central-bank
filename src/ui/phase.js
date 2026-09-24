@@ -13,10 +13,10 @@ const PHASE_TARGETS = [...TARGETS, ['r26', '全国一般公共预算收入']];
 /** 坐标轴刻度：比率显示为百分数，金额按原单位 */
 function tick(spec, v) {
   const k = dispKind(spec);
-  const trim = (s) => s.replace(/\.?0+$/, '');
+  const trim = (s) => s.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '').replace(/^-/, '−');
   if (k === 'pct') return `${trim((v * 100).toFixed(2))}%`;
   if (k === 'wanyi') return trim((v / 1e4).toFixed(2));
-  if (k === 'yi') return Math.round(v).toLocaleString('en-US');
+  if (k === 'yi') return Math.round(v).toLocaleString('en-US').replace(/^-/, '−');
   return trim(v.toFixed(2));
 }
 const unitOf = (spec) => ({ pct: '', wanyi: '万亿元', wy: '万亿元', yi: '亿元', num: '' }[dispKind(spec)] ?? '');

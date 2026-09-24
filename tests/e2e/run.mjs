@@ -287,6 +287,23 @@ await t('公式实验室：输入表达式得到三行公式', async () => {
   await page.close();
 });
 
+await t('反向求解：求出参数值并可一键应用', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#sens', { waitUntil: 'domcontentloaded' });
+  await page.selectOption('#gs-target', 'drate26');
+  await page.waitForTimeout(80);
+  await page.selectOption('#gs-param', 'dr26');
+  await page.fill('#gs-goal', '4.5');
+  await page.locator('button', { hasText: '求解' }).click();
+  await page.waitForTimeout(80);
+  await page.locator('button', { hasText: '应用这个值' }).click();
+  await page.waitForTimeout(120);
+  const v = await page.evaluate(() => __fiscal.v.drate26);
+  assert.ok(Math.abs(v - 0.045) < 1e-8, `赤字率应为 4.5%，实际 ${v}`);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await browser.close();
 console.log(`\n# pass ${passes}\n# fail ${failures}`);
 process.exit(failures ? 1 : 0);

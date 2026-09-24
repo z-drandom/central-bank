@@ -62,7 +62,7 @@ export function lineChart({ series, width = 640, height = 260, yFmt = (v) => `${
     s += `<text data-node="${last.id}" x="${X(last.x) + 8}" y="${ly + 4}" class="t-name" style="font-size:12px">${esc(yFmt(last.y))}</text>`;
     s += `<text x="${X(last.x) + 8}" y="${ly + 18}" class="t-small">${esc(se.label)}</text>`;
   }
-  return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(title)}">${s}</svg>`;
+  return `<svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(title)}">${s}</svg>`;
 }
 
 /**
@@ -106,7 +106,7 @@ export function stackChart({ years, parts, net, width = 640, height = 240, yFmt 
     s += `<circle data-node="${net[i].id}" cx="${X(i)}" cy="${Y(net[i].v)}" r="4.2" class="fill-ink" stroke="var(--surface)" stroke-width="1.5"><title>${yr} 负债率变动：${esc(yFmt(net[i].v))} ${unit}</title></circle>`;
     s += `<text class="axis-t" x="${X(i)}" y="${m.t + H + 17}" text-anchor="middle">${String(yr).slice(2)}</text>`;
   });
-  return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(title)}">${s}</svg>`;
+  return `<svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(title)}">${s}</svg>`;
 }
 
 /** 扇形图：p10–p90 与 p25–p75 两层区间 + 中位数 + 当前路径 */
@@ -138,5 +138,5 @@ export function fanChart({ years, q, current, width = 760, height = 280, refs = 
   s += `<text x="${lx}" y="${Y(q.p90[li]) + 4}" class="t-small">90%：${esc(yFmt(q.p90[li]))}</text>`;
   s += `<text x="${lx}" y="${Y(current.at(-1).y) + 4}" class="t-name" style="font-size:12px">当前 ${esc(yFmt(current.at(-1).y))}</text>`;
   s += `<text x="${lx}" y="${Y(q.p10[li]) + 4}" class="t-small">10%：${esc(yFmt(q.p10[li]))}</text>`;
-  return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(title)}">${s}</svg>`;
+  return `<svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(title)}">${s}</svg>`;
 }

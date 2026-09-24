@@ -669,3 +669,14 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .rank b { font: 700 16px var(--f-display); }
 .fan-outer { fill: var(--xfer); opacity: 0.12; }
 .fan-inner { fill: var(--xfer); opacity: 0.22; }
+.term-k { position: absolute; top: -7px; right: -6px; font-size: 10px; line-height: 15px; width: 15px; height: 15px; text-align: center; border-radius: 50%; background: var(--surface); border: 1px solid var(--rule-strong); color: var(--ink-3); }
+.term.param .term-k { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.ledger-legend { font-size: 12px; color: var(--ink-3); display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+.ledger-legend i { display: inline-block; font-style: normal; font-size: 10px; width: 15px; height: 15px; line-height: 15px; text-align: center; border-radius: 50%; border: 1px solid var(--rule-strong); margin-right: 4px; }
+.ledger-legend i.p { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.gloss-item { border: 1px solid var(--rule); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
+.gloss-t { display: flex; gap: 8px; align-items: baseline; }
+.gloss-t b { font: 700 15px var(--f-display); }
+.gloss-item p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+.gloss-n { display: flex; flex-wrap: wrap; gap: 4px; }

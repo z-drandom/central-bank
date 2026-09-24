@@ -64,5 +64,5 @@ export function renderSankey(app, def) {
     labels += labelBlock(app, n);
   }
   const extra = typeof def.extra === 'function' ? def.extra(lay) : '';
-  return `<svg viewBox="0 ${-pad} ${W} ${H}" role="img" aria-label="${esc(def.aria ?? '资金流向图')}">${links}${flows}${nodes}${extra}${labels}</svg>`;
+  return `<svg viewBox="0 ${-pad} ${W} ${H}" role="group" aria-label="${esc(def.aria ?? '资金流向图')}">${links}${flows}${nodes}${extra}${labels}</svg>`;
 }

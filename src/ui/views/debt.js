@@ -112,7 +112,7 @@ function renderBlocks(app, when) {
     out += `<g data-node="${id}"><text x="${rx}" y="${yy}" class="t-small">${t}</text><text x="${rx}" y="${yy + 24}" class="t-big">${(r * 100).toFixed(1)}%</text>${dp ? `<text x="${rx + 86}" y="${yy + 24}" class="${dp.up ? 't-up' : 't-down'}">${esc(dp.text)}</text>` : ''}</g>`;
   });
   const defs = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="rgba(255,255,255,0.18)"/><line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.75)" stroke-width="2.2"/></pattern></defs>`;
-  return `<svg viewBox="0 0 ${W} ${base + 30}" role="img" aria-label="政府债务构成（按比例）">${defs}${out}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${base + 30}" role="group" aria-label="政府债务构成（按比例）">${defs}${out}</svg>`;
 }
 
 function scopeBars(app) {

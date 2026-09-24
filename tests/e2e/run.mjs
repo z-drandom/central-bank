@@ -160,6 +160,12 @@ await t('先猜后算：作答后显示模型计算与公式', async () => {
 await t('公式手册：搜索与对账', async () => {
   const page = await newPage();
   await page.goto(URL + '#book', { waitUntil: 'domcontentloaded' });
+  assert.ok((await page.locator('.gloss-item').count()) >= 20, '默认显示名词解释');
+  await page.locator('.gloss-item .chip').first().click();
+  await page.waitForTimeout(250);
+  assert.ok(await page.locator('.drawer.open').isVisible(), '名词里的数字可打开公式卡片');
+  await page.keyboard.press('Escape');
+  await page.locator('[data-k="fx"]').click();
   await page.fill('#fx-search', '付息');
   await page.waitForTimeout(100);
   assert.ok((await page.locator('.fx-item').count()) >= 3);

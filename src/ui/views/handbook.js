@@ -3,6 +3,7 @@ import { h, esc } from '../dom.js';
 import { formulaLines, fmt, kindOf, symHTML } from '../../model/format.js';
 import { MODULES } from '../../model/specs.js';
 import { reconcile } from '../../model/reconcile.js';
+import { GLOSSARY } from '../../model/glossary.js';
 
 export default function handbook(app) {
   const search = h('input', { class: 'search', type: 'search', id: 'fx-search', placeholder: '搜索：名称、符号或变量名，如"付息"、"赤字率"、rc26', 'aria-label': '搜索公式' });
@@ -12,17 +13,19 @@ export default function handbook(app) {
   const recBox = h('div', { class: 'tbl-wrap' });
   const crossBox = h('div');
   const tabs = h('div', { class: 'seg', style: { display: 'inline-flex', marginBottom: '12px' } });
-  let mode = 'fx';
+  let mode = 'gloss';
   let mod = 'all';
   let showProj = false;
-  const panes = { fx: h('div', { class: 'sheet' }), cross: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
+  const glossBox = h('div', { class: 'gloss' });
+  const panes = { gloss: h('div', { class: 'sheet' }), fx: h('div', { class: 'sheet' }), cross: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
+  panes.gloss.append(h('h3', {}, '名词解释', h('small', {}, `${GLOSSARY.length} 个词条；右侧数字点开可看公式`)), glossBox);
   panes.cross.append(h('h3', {}, '跨图连接', h('small', {}, '所有"一张图的数字用到了另一张图的数字"的公式。点格子筛选，点公式看卡片')), crossBox);
   panes.fx.append(h('h3', {}, '全部公式', h('small', {}, '每条公式都是模拟器实际计算用的那一条（同一段表达式既用来算，也用来显示）')), search, filters, list);
   panes.assume.append(h('h3', {}, '假设与校准参数清单', h('small', {}, '图中没有、为了把四张图连起来而引入的参数。全部可调')), assumeBox);
   panes.rec.append(h('h3', {}, '与原图逐项对账', h('small', {}, '基线下，模拟器对原图每一个数字的复现情况')), recBox);
-  const el = h('div', {}, tabs, panes.fx, panes.cross, panes.assume, panes.rec);
+  const el = h('div', {}, tabs, panes.gloss, panes.fx, panes.cross, panes.assume, panes.rec);
   let pair = null;
-  for (const [k, t] of [['fx', '公式'], ['cross', '跨图连接'], ['assume', '假设清单'], ['rec', '原图对账']]) {
+  for (const [k, t] of [['gloss', '名词'], ['fx', '公式'], ['cross', '跨图连接'], ['assume', '假设清单'], ['rec', '原图对账']]) {
     tabs.append(h('button', { type: 'button', 'data-k': k, onclick: () => { mode = k; update(); } }, t));
   }
   search.addEventListener('input', () => renderList());
@@ -127,6 +130,14 @@ export default function handbook(app) {
     renderCross();
   });
 
+  function renderGloss() {
+    glossBox.innerHTML = GLOSSARY.map((g) => `<div class="gloss-item">
+      <div class="gloss-t"><b>${esc(g.term)}</b><span class="tag">图${esc(g.img)}</span></div>
+      <p>${esc(g.def)}</p>
+      <div class="gloss-n">${g.ids.filter((id) => app.sim.has(id)).map((id) => `<button class="chip" data-node="${id}">${esc(app.sim.spec(id).label)}：${esc(fmt(app.sim.spec(id), app.v[id]))}</button>`).join('')}</div>
+    </div>`).join('');
+  }
+
   let builtFor = null;
   function update() {
     for (const b of tabs.children) b.setAttribute('aria-pressed', String(b.dataset.k === mode));
@@ -139,6 +150,7 @@ export default function handbook(app) {
     if (mode === 'assume') renderAssume();
     if (mode === 'rec') renderRec();
     if (mode === 'cross') renderCross();
+    if (mode === 'gloss') renderGloss();
   }
 
   return {

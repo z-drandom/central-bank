@@ -67,7 +67,8 @@ export function termHTML(app, id, o = {}) {
   const s = app.sim.spec(id);
   const dp = deltaParts(app, id, o.fmt?.scale);
   const auto = !app.sim.isInput(id);
-  return `<span class="term ${o.cls ?? ''} ${dp ? 'changed' : ''}" data-node="${id}" tabindex="0" role="button" title="${esc(s.label)}${auto ? '（公式计算）' : '（参数）'}">
+  return `<span class="term ${o.cls ?? ''} ${dp ? 'changed' : ''} ${auto ? 'auto' : 'param'}" data-node="${id}" tabindex="0" role="button" title="${esc(s.label)}${auto ? '（由公式算出）' : '（可调参数）'}">
+    <span class="term-k" aria-hidden="true">${auto ? '算' : '调'}</span>
     <span class="term-l">${esc(o.label ?? s.short ?? s.label)}</span>
     <span class="term-v num">${esc(val(app, id, o.fmt))}</span>
     ${dp ? `<span class="term-d ${dp.up ? 'up' : 'down'}">${esc(dp.text)}</span>` : ''}

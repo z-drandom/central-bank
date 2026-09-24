@@ -62,7 +62,7 @@ export default function sensitivity(app) {
       </g>`;
     });
     chart.innerHTML = r.rows.length
-      ? `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="敏感度龙卷风图">${s}</svg>`
+      ? `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="敏感度龙卷风图">${s}</svg>`
       : '<div class="empty">这个指标在当前规则下没有可调的上游参数。</div>';
   }
 

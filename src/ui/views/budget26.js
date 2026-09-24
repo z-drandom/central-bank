@@ -82,6 +82,7 @@ export default function budget26(app) {
     ),
     h('div', { class: 'sheet' },
       h('h3', {}, '三本小账必须同时平', h('small', {}, '预算恒等式：来源 = 去向。当前平衡规则决定谁是余项')),
+      h('div', { class: 'ledger-legend' }, h('span', {}, h('i', { class: 'p' }, '调'), '可调参数'), h('span', {}, h('i', {}, '算'), '由公式算出——换一个平衡规则，看“算”字挪到哪一项')),
       ledger,
     ),
   );

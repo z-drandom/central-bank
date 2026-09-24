@@ -123,7 +123,7 @@ export default function overview(app) {
       <marker id="ov-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="fill-muted"/></marker>
       <marker id="ov-ah-on" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="fill-def"/></marker>
     </defs>`;
-    map.innerHTML = `<svg viewBox="0 -24 1100 674" role="img" aria-label="四张图之间的公式连接">${defs}${CLUSTERS.map((c) => clusterSVG(app, c)).join('')}${LINKS.map((l) => linkSVG(app, l)).join('')}</svg>`;
+    map.innerHTML = `<svg viewBox="0 -24 1100 674" role="group" aria-label="四张图之间的公式连接">${defs}${CLUSTERS.map((c) => clusterSVG(app, c)).join('')}${LINKS.map((l) => linkSVG(app, l)).join('')}</svg>`;
     const v = app.v;
     const T = (id, o) => `<b class="num" data-node="${id}" style="cursor:pointer;border-bottom:1px dotted var(--ink-3)">${esc(val(app, id, o))}</b>`;
     story.innerHTML = [

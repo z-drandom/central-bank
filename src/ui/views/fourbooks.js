@@ -172,7 +172,7 @@ export function renderFourBooks(app) {
   // 政府性基金结余 → 稳定调节基金（补充）
   s += arrow(ortho([[712, 594], [732, 594], [732, 409], [990, 409], [990, 60], [626, 60]]), v.f2_tostab, 'a-def', { dash: true });
 
-  return `<svg viewBox="0 0 1000 880" role="img" aria-label="财政四本账之间的资金往来">${`<defs>${markers}</defs>`}${s}</svg>`;
+  return `<svg viewBox="0 0 1000 880" role="group" aria-label="财政四本账之间的资金往来">${`<defs>${markers}</defs>`}${s}</svg>`;
 }
 
 export default function fourbooks(app) {

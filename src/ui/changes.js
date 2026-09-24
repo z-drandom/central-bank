@@ -143,7 +143,7 @@ export function createChanges(app) {
         <text x="8" y="34" class="${dp?.up ? 't-up' : 't-down'}">${esc(dp ? dp.text : '')}</text>
       </g>`;
     }
-    const svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="min-width:${Math.min(width, 900)}px" role="img" aria-label="传导路径图">${edges}${nodes}</svg>`;
+    const svg = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="min-width:${Math.min(width, 900)}px" role="group" aria-label="传导路径图">${edges}${nodes}</svg>`;
     const wrap = h('div', { class: 'chart', style: { maxHeight: '560px', overflow: 'auto' } });
     wrap.innerHTML = svg;
     const note = ids.length > MAX ? h('div', { class: 'hint' }, `只显示前 ${MAX} 个（共 ${ids.length} 个）。可用上面的分类筛选。`) : null;

@@ -63,7 +63,7 @@ export default function exec25(app) {
         h('span', {}, h('i', { style: { background: 'var(--xfer)' } }), '汇总 / 调入'),
       ),
     ),
-    h('div', { class: 'sheet' }, h('h3', {}, '账是怎么平的'), ledger),
+    h('div', { class: 'sheet' }, h('h3', {}, '账是怎么平的'), h('div', { class: 'ledger-legend' }, h('span', {}, h('i', { class: 'p' }, '调'), '可调参数'), h('span', {}, h('i', {}, '算'), '由公式算出——换一个平衡规则，看“算”字挪到哪一项')), ledger),
     h('div', { class: 'sheet' },
       h('h3', {}, '分税制：同一笔税，中央地方怎么分', h('small', {}, '图③只有全国合计。用法定分享比例拆出中央收入，再按图②增速接到 2026 年')),
       split,

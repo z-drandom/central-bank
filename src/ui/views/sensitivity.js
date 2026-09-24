@@ -4,6 +4,7 @@ import { tornado, TARGETS, stepText } from '../../model/sensitivity.js';
 import { fmt, fmtDelta, dispKind } from '../../model/format.js';
 import { MODULES } from '../../model/specs.js';
 import { goalSeek } from '../../model/solve.js';
+import { influenceMatrix, MATRIX_COLS } from '../../model/matrix.js';
 import { toDisp, fromDisp } from '../controls.js';
 
 export default function sensitivity(app) {
@@ -68,7 +69,40 @@ export default function sensitivity(app) {
     gsOut,
     h('p', { class: 'hint' }, '参数列表按对目标的影响大小排序，只列上游参数。求解在参数滑杆的允许区间内进行；达不到时会告诉你目标的可达范围。'),
   );
+  const mat = h('div', { class: 'tbl-wrap' });
+  const matSheet = h('div', { class: 'sheet' },
+    h('h3', {}, '影响矩阵：谁影响谁', h('small', {}, '每一行把一个旋钮拨动一步（比率 +1 个百分点，金额 +10%），每一格是结果的变化。“·”表示两者之间没有任何公式路径；“0”表示有路径但效果正好抵消。颜色越深影响越大（按列比较）')),
+    mat,
+  );
+  function renderMatrix() {
+    const g = app.sim.graph;
+    const rows = influenceMatrix(g, app.sim.inputs);
+    const colMax = MATRIX_COLS.map((_, j) => Math.max(...rows.map((r) => Math.abs(r.cells[j] ?? 0)), 1e-12));
+    const short = (spec, d) => {
+      const k = dispKind(spec);
+      const sg = d >= 0 ? '+' : '−';
+      const a = Math.abs(d);
+      if (k === 'pct') return `${sg}${(a * 100).toFixed(2)}`;
+      if (k === 'wanyi') return `${sg}${(a / 1e4).toFixed(2)}`;
+      if (k === 'wy') return `${sg}${a.toFixed(2)}`;
+      return `${sg}${Math.round(a).toLocaleString('en-US')}`;
+    };
+    const unitOf = (spec) => ({ pct: 'pp', wanyi: '万亿', wy: '万亿', yi: '亿' }[dispKind(spec)] ?? '');
+    mat.innerHTML = `<table class="tbl mat"><thead><tr><th>旋钮（拨动一步）</th>${MATRIX_COLS.map(([c, t]) => `<th class="n" data-node="${c}" style="cursor:pointer">${esc(t)}<div class="hint" style="font-weight:400">${esc(app.sim.has(c) ? unitOf(app.sim.spec(c)) : '')}</div></th>`).join('')}</tr></thead><tbody>
+      ${rows.filter((r) => !r.skipped).map((r) => {
+        const sp = g.specs.get(r.id);
+        return `<tr><th data-node="${r.id}" style="cursor:pointer;text-align:left;font-weight:500">${esc(sp.label)}<div class="hint" style="font-weight:400">${esc(stepText(sp, r.step).replace('±', '+'))}</div></th>${r.cells.map((d, j) => {
+          if (d == null) return '<td class="n mat-0">·</td>';
+          const cspec = app.sim.spec(MATRIX_COLS[j][0]);
+          const t = Math.min(1, Math.abs(d) / colMax[j]);
+          const small = Math.abs(d) < 1e-9 * Math.max(1, Math.abs(app.v[MATRIX_COLS[j][0]]));
+          const bg = small ? 'transparent' : `color-mix(in srgb, var(${d > 0 ? '--up' : '--down'}) ${Math.round(8 + t * 45)}%, var(--surface))`;
+          return `<td class="n" data-node="${MATRIX_COLS[j][0]}" style="cursor:pointer;background:${bg}">${small ? '0' : esc(short(cspec, d))}</td>`;
+        }).join('')}</tr>`;
+      }).join('')}</tbody></table>`;
+  }
   const el = h('div', { style: { display: 'grid', gap: '16px' } },
+    matSheet,
     gsSheet,
     h('div', { class: 'sheet' },
       h('h3', {}, '谁对这个指标影响最大', h('small', {}, '在当前参数和规则下，把每个参数单独上下拨动一步，其余不动')),
@@ -86,6 +120,7 @@ export default function sensitivity(app) {
   let gsInit = false;
   function update() {
     if (!gsInit) { fillParams(); gsInit = true; }
+    renderMatrix();
     for (const b of modeSeg.children) b.setAttribute('aria-pressed', String(b.dataset.m === mode));
     if (!app.sim.has(target)) target = 'p_d_2035';
     const g = app.sim.graph;
@@ -113,8 +148,8 @@ export default function sensitivity(app) {
 
   return {
     id: 'sens',
-    title: '敏感度',
-    heading: '敏感度与反向求解：哪个旋钮最有劲，要拧多少',
+    title: '影响与敏感度',
+    heading: '影响矩阵、敏感度与反向求解：谁影响谁、影响多大、要拧多少',
     lead: '选一个你关心的指标，模拟器会把它上游的每个参数分别拨高、拨低一步，重新计算整张依赖图，按影响大小排队。这是回答"调哪几项会带来多大变化"最系统的办法。',
     mods: [],
     el,

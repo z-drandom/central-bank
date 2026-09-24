@@ -12,6 +12,7 @@ import { VIEWS } from './views/index.js';
 import { createTracker } from './views/play.js';
 import { createNarrator } from './narrator.js';
 import { createFinder } from './finder.js';
+import { describeSnapshot } from '../model/history.js';
 
 const KPIS = [
   { id: 'drate26', label: '2026 赤字率', ref: 0.03, refText: '3%：传统警戒参考', max: 0.08 },
@@ -121,6 +122,31 @@ export function createApp(root) {
   });
   const undoBtn = h('button', { class: 'btn ghost', onclick: () => app.undo(), title: '撤销（Ctrl+Z）', 'aria-label': '撤销' }, '↶ 撤销');
   const redoBtn = h('button', { class: 'btn ghost', onclick: () => app.redo(), title: '重做（Ctrl+Shift+Z）', 'aria-label': '重做' }, '↷ 重做');
+  // 历史：最近走过的状态，点一下回到那里（这一步本身也可撤销）
+  const histList = h('div', { class: 'finder-list', role: 'listbox', 'aria-label': '历史状态' });
+  const histBox = h('div', { class: 'finder hist', hidden: true, role: 'dialog', 'aria-label': '历史' },
+    h('b', {}, '走过的状态', h('small', { class: 'hint', style: { fontWeight: 400, marginLeft: '8px' } }, '点一下回到那里；这一步也可以撤销')),
+    histList,
+    h('button', { class: 'btn ghost', style: { justifySelf: 'end' }, onclick: () => closeHist() }, '关闭'),
+  );
+  const histScrim = h('div', { class: 'finder-scrim', hidden: true, onclick: () => closeHist() });
+  function closeHist() { histBox.hidden = true; histScrim.hidden = true; }
+  function openHist() {
+    const states = [{ snap: sim.snapshot(), now: true }, ...hist.past.slice(-15).reverse().map((snap) => ({ snap }))];
+    histList.innerHTML = '';
+    states.forEach((st, i) => {
+      const d = describeSnapshot(st.snap);
+      histList.append(h('button', { class: `finder-item ${st.now ? 'on' : ''}`, type: 'button', disabled: !!st.now, onclick: () => { closeHist(); app.restore(st.snap, '已回到历史状态（可撤销）'); } },
+        h('span', { class: 'fi-l' }, st.now ? '当前' : `${i} 步之前`, h('small', {}, d.text)),
+        h('span', { class: 'fi-v hint' }, d.count ? `${d.count} 处改动` : '原图'),
+      ));
+    });
+    if (states.length === 1) histList.append(h('div', { class: 'empty' }, '还没有历史：改动参数或规则后，这里会记录每一步。'));
+    histBox.hidden = false;
+    histScrim.hidden = false;
+    histList.querySelector('button:not([disabled])')?.focus();
+  }
+  const histBtn = h('button', { class: 'btn ghost', onclick: () => openHist(), title: '最近走过的状态', 'aria-label': '历史' }, '☰ 历史');
   const tabBar = h('nav', { class: 'tabs', role: 'tablist', 'aria-label': '模块' });
   const toast = h('div', { role: 'status', 'aria-live': 'polite', style: { position: 'fixed', left: '50%', bottom: '24px', transform: 'translateX(-50%)', background: 'var(--ink)', color: 'var(--paper)', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', zIndex: 60, opacity: 0, transition: 'opacity .2s', pointerEvents: 'none' } });
   const top = h('header', { class: 'top' },
@@ -132,6 +158,7 @@ export function createApp(root) {
         h('button', { class: 'btn ghost', onclick: () => finder.open(), title: '查找任何数字（/ 或 Ctrl+K）', 'aria-label': '查找数字' }, '⌕ 查找'),
         undoBtn,
         redoBtn,
+        histBtn,
         h('button', { class: 'btn', onclick: () => app.resetAll(), title: '所有参数和规则恢复原图' }, '全部复原'),
       ),
     ),
@@ -356,13 +383,14 @@ export function createApp(root) {
   );
   root.append(help);
   const finder = createFinder(app);
-  root.append(...finder.el);
+  root.append(...finder.el, histScrim, histBox);
   app.finder = finder;
   document.addEventListener('keydown', (e) => {
     const typing = e.target.matches?.('input, textarea, select');
     if (e.key === '?' && !typing) { help.hidden = !help.hidden; return; }
     if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); finder.open(); return; }
     if (e.key === 'Escape' && !help.hidden) { help.hidden = true; return; }
+    if (e.key === 'Escape' && !histBox.hidden) { closeHist(); return; }
     if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return;
     if (e.target.matches?.('input[type=text], input[type=search], textarea')) return;
     e.preventDefault();

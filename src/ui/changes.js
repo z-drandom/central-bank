@@ -5,6 +5,7 @@ import { MODULES } from '../model/specs.js';
 import { activeWarnings } from './warnings.js';
 import { deltaParts } from './common.js';
 import { summarize } from '../model/summary.js';
+import { brief } from '../model/brief.js';
 
 const FILTERS = [
   { key: 'core', label: '全部（不含推演）', test: (s) => s.mod !== 'proj' },
@@ -24,11 +25,28 @@ export function createChanges(app) {
   const chips = h('div', { class: 'presets', style: { padding: '0', border: '0' } });
   const viewBtns = h('div', { class: 'seg', style: { flex: '0 0 auto' } });
   const body = h('div');
+  const copyMsg = h('span', { class: 'hint', role: 'status' });
+  let copyArea = null;
+  const copyBtn = h('button', { class: 'btn', type: 'button', onclick: async () => {
+    const text = brief(app.sim);
+    copyArea?.remove();
+    copyArea = null;
+    try { await navigator.clipboard.writeText(text); copyMsg.textContent = '已复制'; }
+    catch {
+      copyArea = h('textarea', { class: 'search copy-area', rows: 8, readonly: true, 'aria-label': '本次分析文本' }, text);
+      sumBox.after(copyArea);
+      copyArea.focus(); copyArea.select();
+      copyMsg.textContent = '浏览器不允许自动复制，文本已选中';
+    }
+    setTimeout(() => (copyMsg.textContent = ''), 2500);
+  } }, '复制本次分析');
   const el = h('section', { class: 'changes sheet', id: 'changes', 'aria-label': '传导链' },
     h('div', { class: 'changes-head' },
       h('h3', {}, '传导链'),
       sum,
       h('span', { class: 'grow' }),
+      copyMsg,
+      copyBtn,
       viewBtns,
     ),
     sumBox,

@@ -10,7 +10,8 @@ test('每条讲解的每一步：状态可重放、高亮的节点都存在、�
       for (const id of st.focus ?? []) assert.ok(sim.has(id), `${story.id} 第 ${k + 1} 步：节点 ${id} 不存在`);
       const T = (id) => { assert.ok(sim.has(id), `${story.id}#${k + 1} T(${id})`); return String(sim.values[id]); };
       const D = (id) => { assert.ok(sim.has(id), `${story.id}#${k + 1} D(${id})`); return String(sim.values[id] - sim.base[id]); };
-      const txt = st.text(T, D);
+      const A = (id) => { assert.ok(sim.has(id), `${story.id}#${k + 1} A(${id})`); return String(Math.abs(sim.values[id] - sim.base[id])); };
+      const txt = st.text(T, D, A);
       assert.ok(txt.length > 20);
       const moved = (id) => Math.abs(sim.values[id] - sim.base[id]) > 1e-9 * Math.max(1, Math.abs(sim.base[id]));
       if (st.expectSame) {

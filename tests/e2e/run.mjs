@@ -304,6 +304,30 @@ await t('反向求解：求出参数值并可一键应用', async () => {
   await page.close();
 });
 
+await t('复制本次分析：剪贴板被拒时退回可选中的文本框；? 打开快捷键帮助', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('denied')) } }); __fiscal.set('dr26', 0.05); });
+  await page.waitForTimeout(300);
+  const btn = page.locator('button', { hasText: '复制本次分析' });
+  await btn.click();
+  await btn.click();
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator('.copy-area').count(), 1, '重复点击不应堆出多个文本框');
+  const txt = await page.locator('.copy-area').inputValue();
+  assert.match(txt, /赤字率/);
+  assert.match(txt, /FS1\./);
+  await page.locator('body').click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press('?');
+  await page.waitForTimeout(80);
+  assert.ok(await page.locator('.help').isVisible(), '? 应打开帮助');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(80);
+  assert.equal(await page.locator('.help').isVisible(), false);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

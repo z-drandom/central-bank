@@ -716,3 +716,7 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .mat th, .mat td { white-space: nowrap; font-size: 12.5px; }
 .mat td.mat-0 { color: var(--rule-strong); text-align: center; }
 .mat tbody th { position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.help { position: fixed; left: 50%; top: 20%; transform: translateX(-50%); z-index: 70; background: var(--surface); border: 2px solid var(--ink); border-radius: 8px; padding: 14px 18px; box-shadow: var(--shadow); width: min(420px, calc(100vw - 32px)); }
+.help ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13.5px; }
+kbd { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--rule-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface-2); }
+.copy-area { margin-top: 8px; font-family: var(--f-mono); font-size: 12px; resize: vertical; }

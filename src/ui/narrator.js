@@ -35,6 +35,14 @@ export function createNarrator(app) {
     return `<b class="num nar-num ${d > 0 ? 'up' : d < 0 ? 'down' : ''}" data-node="${id}">${esc(txt)}</b>`;
   };
 
+  const A = (id) => {
+    if (!app.sim.has(id)) return '—';
+    const s = app.sim.spec(id);
+    const d = Math.abs(app.v[id] - app.b[id]);
+    const txt = fmtDelta(s, d, { unit: false }).replace(/^\+/, '');
+    return `<b class="num nar-num" data-node="${id}">${esc(txt)}</b>`;
+  };
+
   function start(id) {
     story = STORIES.find((s) => s.id === id);
     if (!story) return;
@@ -62,7 +70,7 @@ export function createNarrator(app) {
     const st = story.steps[k];
     title.textContent = story.title;
     stepNo.textContent = `${k + 1} / ${story.steps.length}`;
-    text.innerHTML = st.text(T, D);
+    text.innerHTML = st.text(T, D, A);
     dots.innerHTML = story.steps.map((_, i) => `<i class="${i === k ? 'on' : i < k ? 'done' : ''}"></i>`).join('');
     prev.disabled = k === 0;
     next.textContent = k === story.steps.length - 1 ? '讲完了 ✓' : '下一步 →';

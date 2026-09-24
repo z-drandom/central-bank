@@ -341,7 +341,19 @@ export function createApp(root) {
   const setTopH = () => document.documentElement.style.setProperty('--top-h', `${top.offsetHeight}px`);
   if ('ResizeObserver' in window) new ResizeObserver(setTopH).observe(top);
   else setTopH();
+  const help = h('div', { class: 'help', hidden: true, role: 'dialog', 'aria-label': '快捷键' },
+    h('b', {}, '快捷键'),
+    h('ul', {},
+      h('li', {}, h('kbd', {}, '←'), ' ', h('kbd', {}, '→'), '（焦点在标签栏时）切换页面'),
+      h('li', {}, h('kbd', {}, 'Ctrl'), '+', h('kbd', {}, 'Z'), ' 撤销；', h('kbd', {}, 'Ctrl'), '+', h('kbd', {}, 'Shift'), '+', h('kbd', {}, 'Z'), ' 重做'),
+      h('li', {}, h('kbd', {}, 'Enter'), ' 在数字上打开公式卡片；', h('kbd', {}, 'Esc'), ' 关闭卡片'),
+      h('li', {}, h('kbd', {}, '?'), ' 显示/隐藏本帮助'),
+    ),
+  );
+  root.append(help);
   document.addEventListener('keydown', (e) => {
+    if (e.key === '?' && !e.target.matches?.('input, textarea, select')) { help.hidden = !help.hidden; return; }
+    if (e.key === 'Escape' && !help.hidden) { help.hidden = true; return; }
     if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return;
     if (e.target.matches?.('input[type=text], input[type=search], textarea')) return;
     e.preventDefault();

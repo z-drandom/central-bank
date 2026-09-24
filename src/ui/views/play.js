@@ -198,8 +198,14 @@ export default function play(app) {
       h('button', { class: 'btn', disabled: qi === 0, onclick: () => { qi--; answered = null; renderQuiz(); } }, '上一题'),
       h('button', { class: 'btn primary', onclick: () => { qi = (qi + 1) % QUIZ.length; answered = null; renderQuiz(); } }, qi === QUIZ.length - 1 ? '从头再来' : '下一题'),
       answered != null ? h('button', { class: 'btn', onclick: () => {
-        app.sim.resetAll();
-        app.applyPreset({ label: '题目情景', modes: q.setup.modes, changes: q.setup.changes, go: q.tab });
+        // 在副本上从原图基线施加题目设定，再整体载入（可撤销回到做题前的状态）
+        const s = app.sim.clone();
+        s.resetAll();
+        if (q.setup.modes) s.setModes(q.setup.modes);
+        s.apply(q.setup.changes ?? []);
+        app.restore(s.snapshot(), '已载入题目情景（可撤销）');
+        app.go(q.tab);
+        if (q.phase) app.showPhase?.(q.phase);
       } }, '在沙盘里看这个情景') : null,
     ));
   }

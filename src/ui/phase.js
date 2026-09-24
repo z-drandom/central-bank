@@ -353,5 +353,14 @@ export function createPhase(app) {
     }).observe(plot);
   }
 
+  // 其他页面（测验）可以直接打开某张预设图
+  app.showPhase = (id) => {
+    if (!PHASE_PRESETS.some((p) => p.id === id)) return;
+    preset = id;
+    cursor = null;
+    update();
+    requestAnimationFrame(() => el.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+  };
+
   return { el, update, get state() { return last; } };
 }

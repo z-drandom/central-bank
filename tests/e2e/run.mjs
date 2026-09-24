@@ -386,6 +386,28 @@ await t('总览：传导回放逐站点亮，改参数后自动停止', async ()
   await page.close();
 });
 
+await t('测验：交互项题可答，载入情景后打开对应相图，且可撤销回做题前', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#play', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => __fiscal.set('t_vat', 65000));
+  await page.waitForTimeout(200);
+  for (let i = 0; i < 12; i++) await page.locator('button', { hasText: '下一题' }).click();
+  assert.equal(await page.getByText('名义增速从 5% 提到 7%').count(), 1);
+  await page.locator('.quiz-opt', { hasText: '再加一个交互项' }).click();
+  assert.match(await page.locator('.quiz-exp').innerText(), /答对了/);
+  await page.locator('button', { hasText: '在沙盘里看这个情景' }).click();
+  await page.waitForTimeout(500);
+  assert.match(page.url(), /#sens$/);
+  assert.equal(await page.locator('#ph-target').inputValue(), 'oth26');
+  assert.equal(await page.evaluate(() => __fiscal.v.dr26), 0.05);
+  assert.equal(await page.evaluate(() => __fiscal.v.t_vat), 68947, '题目情景从原图基线出发');
+  await page.locator('button[aria-label="撤销"]').click();
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => __fiscal.v.t_vat), 65000, '撤销应回到做题前');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

@@ -38,7 +38,7 @@ function labelBlock(app, n) {
   if (L.dx && pos !== 'above' && pos !== 'below') x += L.dx;
   if (L.dy && pos !== 'above' && pos !== 'below') y += L.dy;
   const body = lines.map((l, i) => `<text class="${l.cls}" text-anchor="${anchor}" y="${i * LH}">${esc(l.text)}${l.extra ?? ''}</text>`).join('');
-  return `<g class="halo" data-node="${id}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})">${body}</g>`;
+  return `<g class="halo" data-node="${id}" data-sk="${n.id}" tabindex="0" role="button" aria-label="${esc(name)} ${esc(value)}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})">${body}</g>`;
 }
 
 export function renderSankey(app, def) {
@@ -49,7 +49,7 @@ export function renderSankey(app, def) {
   let links = '';
   let flows = '';
   for (const l of lay.links) {
-    links += `<path class="sk-link c-${l.color ?? 'link'}" d="${l.path}" data-node="${l.bind ?? l.t}"><title>${esc(l.title ?? '')}</title></path>`;
+    links += `<path class="sk-link c-${l.color ?? 'link'}" d="${l.path}" data-node="${l.bind ?? l.t}" data-s="${l.s}" data-t="${l.t}"><title>${esc(l.title ?? '')}</title></path>`;
     if (l.w > 2.5 && def.flow !== false) {
       flows += `<path class="sk-flow" d="${l.center}" stroke-width="${Math.min(1.6, l.w / 3).toFixed(2)}"/>`;
     }
@@ -60,7 +60,7 @@ export function renderSankey(app, def) {
     if (n.value <= 0 && !n.keep) continue;
     const id = n.bind ?? n.id;
     const hgt = Math.max(n.y1 - n.y0, 1);
-    nodes += `<rect data-node="${id}" class="fill-${n.color ?? 'ink'}" x="${n.x0}" y="${n.y0.toFixed(2)}" width="${n.x1 - n.x0}" height="${hgt.toFixed(2)}" rx="1.5"><title>${esc(app.sim.has(id) ? app.sim.spec(id).label : n.id)}</title></rect>`;
+    nodes += `<rect data-node="${id}" data-sk="${n.id}" class="fill-${n.color ?? 'ink'}" x="${n.x0}" y="${n.y0.toFixed(2)}" width="${n.x1 - n.x0}" height="${hgt.toFixed(2)}" rx="1.5"><title>${esc(app.sim.has(id) ? app.sim.spec(id).label : n.id)}</title></rect>`;
     labels += labelBlock(app, n);
   }
   const extra = typeof def.extra === 'function' ? def.extra(lay) : '';

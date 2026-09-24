@@ -3,6 +3,7 @@ import { h, esc } from '../dom.js';
 import { val, deltaParts, isChanged } from '../common.js';
 import { load, save } from '../dom.js';
 import { createScenarios } from '../scenarios.js';
+import { STORIES } from '../../model/stories.js';
 
 const CLUSTERS = [
   { id: 'y25', tab: 'y25', x: 20, y: 30, w: 280, hh: 250, img: '③', title: '2025 年执行', sub: '税种 → 收入 → 支出 → 差额',
@@ -96,8 +97,18 @@ export default function overview(app) {
       h('button', { class: 'btn ghost', onclick: () => { tour.hidden = true; save(TOUR, true); } }, '知道了，不再显示'),
     ),
   );
+  const stories = h('div', { class: 'sheet' },
+    h('h3', {}, '跟着讲解走一遍', h('small', {}, '每条讲解会自动切页、施加改动、高亮相关数字，文字里的数都是现算的')),
+    h('div', { class: 'story-grid' }, STORIES.map((st) => h('div', { class: 'story-card' },
+      h('b', {}, st.title),
+      h('p', {}, st.summary),
+      h('span', { class: 'hint' }, `${st.steps.length} 步`),
+      h('button', { class: 'btn primary', onclick: () => app.narrator.start(st.id) }, '开始讲解'),
+    ))),
+  );
   const el = h('div', { style: { display: 'contents' } },
     tour,
+    stories,
     h('div', { class: 'sheet' },
       h('h3', {}, '四张图是一台机器', h('small', {}, '方框 = 一张图；箭头上写着连接它们的公式。拖动右侧旋钮，看变化沿哪几条箭头传播（亮起的箭头）')),
       map,

@@ -245,6 +245,26 @@ await t('情景：存 A、复制代码、按代码载入后数值一致', async 
   await page.close();
 });
 
+await t('讲解模式：逐步切页、高亮、文字含现算数字', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#overview', { waitUntil: 'domcontentloaded' });
+  await page.locator('.story-card', { hasText: '赤字 → 债务 → 利息' }).locator('button').click();
+  await page.waitForTimeout(200);
+  assert.ok(await page.locator('.narrator').isVisible());
+  assert.match(page.url(), /#b26$/);
+  assert.ok((await page.locator('#main .hl').count()) > 0, '应高亮相关数字');
+  const txt = await page.locator('.nar-text').innerText();
+  assert.match(txt, /14,725/);
+  for (let i = 0; i < 4; i++) { await page.locator('.narrator .btn.primary').click(); await page.waitForTimeout(120); }
+  assert.match(page.url(), /#proj$/);
+  assert.equal(await page.evaluate(() => __fiscal.v.pdr), 0.05);
+  await page.locator('.narrator .btn', { hasText: '上一步' }).click();
+  await page.waitForTimeout(120);
+  assert.equal(await page.evaluate(() => __fiscal.v.pdr), 0.04, '后退应撤回上一步的改动');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await browser.close();
 console.log(`\n# pass ${passes}\n# fail ${failures}`);
 process.exit(failures ? 1 : 0);

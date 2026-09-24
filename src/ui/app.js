@@ -9,6 +9,7 @@ import { createChanges } from './changes.js';
 import { deltaParts } from './common.js';
 import { VIEWS } from './views/index.js';
 import { createTracker } from './views/play.js';
+import { createNarrator } from './narrator.js';
 
 const KPIS = [
   { id: 'drate26', label: '2026 赤字率', ref: 0.03, refText: '3%：传统警戒参考', max: 0.08 },
@@ -96,7 +97,7 @@ export function createApp(root) {
       rebuildAll();
       flash('已恢复到原图数值');
     },
-    openCard: (id) => card.open(id),
+    openCard: (id) => { card.open(id); app.highlight?.(id); },
     go: (tab) => go(tab),
     onUpdate: (fn) => listeners.add(fn),
     flash: (t) => flash(t),
@@ -140,7 +141,36 @@ export function createApp(root) {
   );
   const tracker = createTracker(app);
   app.tracker = tracker;
-  root.append(h('div', { class: 'app' }, top, viewHost, changes.el, foot), ...card.el, toast, tracker.el);
+  const narrator = createNarrator(app);
+  app.narrator = narrator;
+  root.append(h('div', { class: 'app' }, top, viewHost, changes.el, foot), ...card.el, toast, tracker.el, narrator.el);
+
+  // 高亮：传导链悬停、公式卡片打开时，在当前图表里标出同一个数字
+  let hlId = null;
+  app.highlight = (id) => {
+    const key = Array.isArray(id) ? id.join('|') : id;
+    if (hlId === key) return;
+    for (const el of viewHost.querySelectorAll('.hl')) el.classList.remove('hl');
+    hlId = key;
+    if (!id) return;
+    for (const one of Array.isArray(id) ? id : [id]) {
+      for (const el of viewHost.querySelectorAll(`[data-node="${CSS.escape(one)}"]:not(.sk-link)`)) el.classList.add("hl");
+    }
+  };
+  // 桑基图悬停：只突出与该节点相连的流
+  viewHost.addEventListener('mouseover', (e) => {
+    const n = e.target.closest?.('[data-sk]');
+    const svg = e.target.closest?.('svg');
+    if (!svg) return;
+    for (const el of svg.querySelectorAll('.sk-link.hot')) el.classList.remove('hot');
+    if (!n) { svg.classList.remove('sk-focus'); return; }
+    const k = n.dataset.sk;
+    svg.classList.add('sk-focus');
+    for (const el of svg.querySelectorAll(`.sk-link[data-s="${CSS.escape(k)}"], .sk-link[data-t="${CSS.escape(k)}"]`)) el.classList.add('hot');
+  });
+  viewHost.addEventListener('mouseleave', () => {
+    for (const svg of viewHost.querySelectorAll('svg.sk-focus')) svg.classList.remove('sk-focus');
+  }, true);
 
   // 点击任何带 data-node 的数字 → 打开公式卡片
   root.addEventListener('click', (e) => {
@@ -237,6 +267,10 @@ export function createApp(root) {
     changes.update();
     card.update();
     tracker.update();
+    narrator.update();
+    const hl = hlId;
+    hlId = null;
+    app.highlight(card.current ?? (hl ? hl.split('|') : null));
     for (const fn of listeners) fn();
     // 顶栏高度供参数面板吸顶
     document.documentElement.style.setProperty('--top-h', `${top.getBoundingClientRect().height}px`);

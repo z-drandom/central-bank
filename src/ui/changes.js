@@ -85,7 +85,7 @@ export function createChanges(app) {
         const L = formulaLines(sim.graph, id, app.v, { html: false });
         fx = L.sym;
       } else fx = inputs.has(id) ? '你调整的参数' : '参数';
-      box.append(h('div', { class: `chg ${s.expr == null ? 'input' : ''}`, role: 'listitem', onclick: () => app.openCard(id) },
+      box.append(h('div', { class: `chg ${s.expr == null ? 'input' : ''}`, role: 'listitem', onclick: () => app.openCard(id), onmouseenter: () => app.highlight(id), onmouseleave: () => app.highlight(null) },
         h('span', { class: 'mod' }, s.expr == null ? '输入' : MODULES[s.mod].short),
         h('div', {}, h('div', { class: 'nm' }, s.label), h('div', { class: 'fx' }, fx)),
         h('div', { class: 'vals num' }, `${fmt(s, app.b[id])} → ${fmt(s, app.v[id])}`),

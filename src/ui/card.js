@@ -39,6 +39,7 @@ export function createCard(app) {
     scrim.classList.remove('open');
     current = null;
     history = [];
+    app.highlight?.(null);
   }
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && current) close();

@@ -38,6 +38,21 @@ export const CHALLENGES = [
     solution: [{ id: 'g_def', set: 0.1 }, { id: 'g_sci', set: 0.15 }, { id: 'tsoe26', set: 3300 }],
   },
   {
+    id: 'lessdebt',
+    level: '高阶',
+    title: '少借不减支',
+    tab: 'b26',
+    story: '要把 2026 年赤字率从 4% 压到 3.5%，少借约 7,400 亿；但中央本级"其它"支出和地方支出都不能比原预算少。钱从哪里来？',
+    setup: { modes: { c26: 'rate', absorb: 'other', l26: 'deficit' }, changes: [{ id: 'dr26', set: 0.035 }] },
+    goals: [
+      { text: '赤字率不超过 3.5%', id: 'drate26', test: (v) => v.drate26 <= 0.035 + EPS },
+      { text: '中央本级"其它"支出不低于原预算 6,996 亿', id: 'oth26', test: (v) => v.oth26 >= OTH26 - 0.01 },
+      { text: '地方一般公共预算支出不低于原预算 254,180 亿', id: 'el26', test: (v) => v.el26 >= B2026.expL - 0.01 },
+    ],
+    hint: '赤字率锚定时，中央支出 = 收入 + 赤字 + 调入资金。赤字少了，要么多调入（稳定调节基金、国有资本经营预算），要么压其他本级支出——但不能压转移支付，否则地方支出会减少。「影响与敏感度 → 双目标求解」可以帮你算。',
+    solution: [{ id: 'tstab26', set: 8400 }],
+  },
+  {
     id: 'land',
     level: '进阶',
     title: '土地财政退潮',

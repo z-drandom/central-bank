@@ -245,7 +245,7 @@ export default function play(app) {
     id: 'play',
     title: '挑战',
     heading: '当一回财政部长',
-    lead: `${CHALLENGES.length} 个关卡：减收、加支、卖地收入下滑、老龄化、税制改革、外贸冲击、十年化债。每关都有不止一种解法；参考解经过测试验证可以过关。下面还有 ${QUIZ.length} 道"先猜后算"——先凭直觉选，再看模型怎么算。`,
+    lead: `${CHALLENGES.length} 个关卡：减收、加支、压赤字、卖地收入下滑、老龄化、税制改革、外贸冲击、十年化债。每关都有不止一种解法；参考解经过测试验证可以过关。下面还有 ${QUIZ.length} 道"先猜后算"——先凭直觉选，再看模型怎么算。`,
     mods: [],
     el,
     update,

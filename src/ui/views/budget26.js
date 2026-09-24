@@ -105,7 +105,7 @@ export default function budget26(app) {
 
   function renderRules() {
     if (!app.sim.changedInputs().length) {
-      rules.innerHTML = '<div class="empty">先改一个参数（比如点右侧"经济放缓"），这里会并排显示它在六种规则下分别由谁承担。</div>';
+      rules.innerHTML = '<div class="empty">先改一个参数（比如点参数面板里的"经济放缓"），这里会并排显示它在六种规则下分别由谁承担。</div>';
       return;
     }
     const res = compareRules(app.sim);

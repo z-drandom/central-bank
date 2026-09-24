@@ -1,0 +1,30 @@
+{
+  "name": "fiscal-sandbox",
+  "version": "1.0.0",
+  "description": "中国财政沙盘：把四张财政图做成可联动、每个数字都有公式的模拟器",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "build": "node scripts/build.mjs",
+    "e2e": "node tests/e2e/run.mjs",
+    "serve": "node scripts/serve.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/z-drandom/central-bank.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/z-drandom/central-bank/issues"
+  },
+  "homepage": "https://github.com/z-drandom/central-bank#readme",
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.63.0"
+  },
+  "type": "module",
+  "private": true
+}

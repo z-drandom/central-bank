@@ -497,6 +497,23 @@ await t('影响矩阵：点格子显示路径分解，链式法则与直接重�
   await page.close();
 });
 
+await t('讲解"两个旋钮一起拧"：打开卡片看归因，最后落到相图', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#overview', { waitUntil: 'domcontentloaded' });
+  await page.locator('.story-card', { hasText: '两个旋钮一起拧' }).locator('button').click();
+  await page.waitForTimeout(200);
+  for (let i = 0; i < 3; i++) { await page.locator('.narrator .btn.primary').click(); await page.waitForTimeout(200); }
+  assert.match(await page.locator('.nar-text').innerText(), /Shapley/);
+  assert.equal(await page.locator('.drawer.open').count(), 1, '第 4 步应打开"其它"的卡片');
+  assert.match(await page.locator('.drawer .shap').innerText(), /按你改的 2 个参数归因/);
+  await page.locator('.narrator .btn.primary').click();
+  await page.waitForTimeout(400);
+  assert.match(page.url(), /#sens$/);
+  assert.equal(await page.locator('#phase .chip.on').getAttribute('data-p'), 'oth');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

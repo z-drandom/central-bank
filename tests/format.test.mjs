@@ -38,3 +38,15 @@ test('公式卡片：每个公式节点都能生成四行，代入行以结果�
     assert.ok(L.subst.endsWith(fmt(n, sim.values[n.id])) || /亿元$|万亿元$/.test(L.subst), `${n.id}: ${L.subst}`);
   }
 });
+
+test('代入用精确格式：小数值保留足够有效数字，大数值两位小数', async () => {
+  const { fmtExact } = await import('../src/model/format.js');
+  const wy = { unit: 'wy' };
+  assert.equal(fmtExact(wy, 0.0252, { delta: true }), '+0.0252 万亿元');
+  assert.equal(fmtExact(wy, 22.806, { sig: 6 }), '22.806 万亿元');
+  assert.equal(fmtExact({ unit: 'pct' }, 0.0664, { delta: true }), '+6.64 个百分点');
+  assert.equal(fmtExact({ unit: 'pct' }, 0.9963), '99.63%');
+  assert.equal(fmtExact({ unit: 'yi' }, -3531.04, { delta: true }), '−3,531.04 亿元');
+  assert.equal(fmtExact({ unit: 'yi', disp: 'wy' }, 14024.3, { delta: true }), '+1.402 万亿元');
+  assert.equal(fmtExact({ unit: 'yi' }, NaN), '—');
+});

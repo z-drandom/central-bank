@@ -32,3 +32,12 @@ test('讲解"一笔增值税的旅程"的数字与分税制一致', () => {
   assert.ok(Math.abs((sim.values.rc25 - sim.base.rc25) - dVat * 0.5) < 1e-6);
   assert.ok(Math.abs((sim.values.rc26 - sim.base.rc26) - dVat * 0.5 * (1 + sim.values.g_rc)) < 1e-6);
 });
+
+test('讲解"两个旋钮一起拧"：一起拧 = 单独之和 + GDP₂₀₂₅ × 1% × 2%', () => {
+  const story = STORIES.find((s) => s.id === 'together');
+  const d = (k) => { const sim = stateAt(new Sim(), story, k); return { d: sim.values.oth26 - sim.base.oth26, gdp25: sim.values.gdp25 }; };
+  const a = d(0);
+  const b = d(1);
+  const c = d(2);
+  assert.ok(Math.abs(c.d - a.d - b.d - c.gdp25 * 0.01 * 0.02) < 1e-6, `${c.d} vs ${a.d} + ${b.d}`);
+});

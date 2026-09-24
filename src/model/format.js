@@ -188,3 +188,26 @@ export function symLineText(graph, id) {
   }
   return m.get(id);
 }
+
+/**
+ * 代入式用的精确格式：保证至少 sig（默认 4）位有效数字，避免"0.03 ÷ 0.01 = 4.81"这种因四舍五入而对不上的代入。
+ * delta = true 时带正负号，百分比显示为"个百分点"。
+ */
+export function fmtExact(spec, v, { delta = false, unit = true, sig = 4 } = {}) {
+  if (v == null || !Number.isFinite(v)) return '—';
+  const k = dispKind(spec);
+  const d = k === 'pct' ? v * 100 : k === 'wanyi' ? v / 1e4 : v;
+  const a = Math.abs(d);
+  let s;
+  if (a === 0) s = '0';
+  else if (a >= 1000) s = a.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  else {
+    const dec = Math.min(8, Math.max(2, sig - 1 - Math.floor(Math.log10(a))));
+    s = a.toFixed(dec);
+    // 去掉多余的尾零，但至少保留两位小数
+    while (/\.\d{3,}$/.test(s) && s.endsWith('0')) s = s.slice(0, -1);
+  }
+  const sign = d < 0 ? MINUS : delta && d > 0 ? '+' : '';
+  const u = k === 'pct' ? (delta ? ' 个百分点' : '%') : unit ? { yi: ' 亿元', wanyi: ' 万亿元', wy: ' 万亿元' }[k] ?? '' : '';
+  return `${sign}${s}${u}`;
+}

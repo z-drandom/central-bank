@@ -1,6 +1,6 @@
 // 双目标求解界面：选两个目标、两个参数，牛顿法求出同时满足的组合。
 import { h, esc } from './dom.js';
-import { fmt, fmtDelta, dispKind } from '../model/format.js';
+import { fmt, fmtDelta, fmtExact, dispKind } from '../model/format.js';
 import { goalSeek2, resolveGoals, SOLVE2_EXAMPLES } from '../model/solve2.js';
 import { tornado, TARGETS, stepOf, stepText } from '../model/sensitivity.js';
 import { toDisp, fromDisp } from './controls.js';
@@ -108,7 +108,7 @@ export function createSolve2(app) {
       const t = Math.abs(a) >= 100 ? a.toLocaleString('en-US', { maximumFractionDigits: 2 }) : Number(a.toPrecision(4)).toString();
       return a < 0 ? `(${t.replace('-', '−')})` : t;
     };
-    const cell = (i, j) => (Math.abs(M[i][j]) <= 1e-12 * Math.max(1, Math.abs(f0[i])) ? '0' : fmtDelta(tspecs[i], M[i][j]));
+    const cell = (i, j) => (Math.abs(M[i][j]) <= 1e-12 * Math.max(1, Math.abs(f0[i])) ? '0' : fmtExact(tspecs[i], M[i][j], { delta: true }));
     const tbl = `<table class="tbl s2-j"><thead><tr><th>参数动一步 →</th>${params.map((p, j) => `<th class="n">${esc(pspecs[j].label)}<div class="hint" style="font-weight:400">${esc(stepText(pspecs[j], steps[j]).replace('±', '+'))}</div></th>`).join('')}</tr></thead><tbody>
       ${targets.map((t, i) => `<tr><th>${esc(tspecs[i].label)}</th>${params.map((_, j) => `<td class="n">${esc(cell(i, j))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     out.append(h('div', { class: 'fx-table' },

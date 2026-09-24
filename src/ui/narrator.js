@@ -58,8 +58,10 @@ export function createNarrator(app) {
     const s = stateAt(new Sim(), story, k);
     app.restore(s.snapshot());
     app.go(st.tab);
+    if (st.phase) app.showPhase?.(st.phase);
     render();
     requestAnimationFrame(() => {
+      if (st.card) app.openCard(st.card);
       app.highlight(st.focus ?? null);
       const first = document.querySelector('#main .hl');
       first?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });

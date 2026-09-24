@@ -1,7 +1,7 @@
 // 双参数相图：两个旋钮一起拧，目标指标在整个平面上怎么变。
 // 颜色 = 与当前值的差（红高绿低）；细线 = 等值线；粗实线 = 与当前相同的组合；金色虚线 = 参考线。
 import { h, esc } from './dom.js';
-import { fmt, fmtDelta, dispKind } from '../model/format.js';
+import { fmt, fmtDelta, fmtExact, dispKind } from '../model/format.js';
 import { PHASE_PRESETS, REF_LEVEL, phaseGrid, contour, niceLevels, fitRange, defaultRange } from '../model/phase.js';
 import { tornado, TARGETS } from '../model/sensitivity.js';
 import { MODE_OPTIONS } from '../model/specs.js';
@@ -296,11 +296,12 @@ export function createPhase(app) {
     const xs = g.specs.get(ctx.x);
     const ys = g.specs.get(ctx.y);
     const ts = g.specs.get(ctx.target);
-    const lv = (v) => esc(fmt(ts, v));
+    // 代入式里用足够的有效数字，保证"各项代入后算得出右边"
+    const lv = (v) => esc(fmtExact(ts, v, { sig: 6 }));
     const pv = (v) => (v < 0 ? `(${lv(v)})` : lv(v));
-    const dv = (v) => esc(fmtDelta(ts, v));
-    const stepX = esc(fmtDelta(xs, r.local.sx));
-    const stepY = esc(fmtDelta(ys, r.local.sy));
+    const dv = (v) => esc(fmtExact(ts, v, { delta: true }));
+    const stepX = esc(fmtExact(xs, r.local.sx, { delta: true }));
+    const stepY = esc(fmtExact(ys, r.local.sy, { delta: true }));
     const A = r.trade.gx * r.local.sx;
     const B = r.trade.gy * r.local.sy;
     let trade;
@@ -312,9 +313,9 @@ export function createPhase(app) {
         <div class="k">公式</div><div class="v">Δy = −(∂f/∂x · Δx) ÷ (∂f/∂y · Δy₁) × Δy₁</div>
         <div class="k">读法</div><div class="v read">纵轴需要的变化 = −(横轴动一步的影响 ÷ 纵轴动一步的影响) × 纵轴一步</div>
         <div class="k">拟音</div><div class="v read">∂ 读"偏"（偏导数：只动一个参数时的变化率）</div>
-        <div class="k">代入</div><div class="v subst">Δy = −(${dv(A)} ÷ ${dv(B)}) × ${stepY} = <b>${esc(fmtDelta(ys, need))}</b></div>
+        <div class="k">代入</div><div class="v subst">Δy = −(${dv(A)} ÷ ${dv(B)}) × ${stepY} = <b>${esc(fmtExact(ys, need, { delta: true }))}</b></div>
       </div>
-      <p class="note" style="margin:6px 0 0">在圆点附近，${esc(xs.label)} ${stepX}，${esc(ys.label)}约需 <b>${esc(fmtDelta(ys, need))}</b>，${esc(ts.label)}才保持 ${lv(r.now)} 不变。这是粗实线（与当前相同的等值线）在圆点处的切线斜率；等值线越弯，离圆点越远这个比率偏得越多。</p>`;
+      <p class="note" style="margin:6px 0 0">在圆点附近，${esc(xs.label)} ${stepX}，${esc(ys.label)}约需 <b>${esc(fmtExact(ys, need, { delta: true }))}</b>，${esc(ts.label)}才保持 ${esc(fmt(ts, r.now))} 不变。这是粗实线（与当前相同的等值线）在圆点处的切线斜率；等值线越弯，离圆点越远这个比率偏得越多。</p>`;
     }
     const c = r.corners;
     const x0 = esc(fmt(xs, ctx.xr[0]));

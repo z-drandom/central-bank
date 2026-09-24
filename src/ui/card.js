@@ -35,6 +35,7 @@ export function createCard(app) {
     render();
     drawer.classList.add('open');
     scrim.classList.add('open');
+    document.documentElement.classList.add('card-open');
     // 键盘用户：焦点移到卡片标题
     requestAnimationFrame(() => body.querySelector('.card-title')?.focus({ preventScroll: true }));
   }
@@ -45,6 +46,7 @@ export function createCard(app) {
   function close() {
     drawer.classList.remove('open');
     scrim.classList.remove('open');
+    document.documentElement.classList.remove('card-open');
     current = null;
     history = [];
     app.highlight?.(null);

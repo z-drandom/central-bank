@@ -642,7 +642,7 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 
 /* 讲解 */
 .narrator {
-  position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 32;
+  position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 45; /* 高于遮罩：讲解步骤打开卡片时仍能点"下一步" */
   width: min(420px, calc(100vw - 32px));
   background: var(--surface); border: 2px solid var(--xfer); border-radius: 8px; box-shadow: var(--shadow);
   padding: 10px 14px 12px; display: grid; gap: 8px;
@@ -658,7 +658,8 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .story-card b { font: 700 15px var(--f-display); }
 .story-card p { margin: 0; font-size: 13px; color: var(--ink-2); }
 .story-card .btn { justify-self: start; }
-@media (max-width: 640px) { .narrator { right: 8px; left: 8px; width: auto; bottom: 8px; } }
+@media (max-width: 640px) { .narrator { right: 8px; left: 8px; width: auto; bottom: 8px; } .card-open .narrator { z-index: 55; } }
+@media (min-width: 641px) { .card-open .narrator { right: calc(min(460px, 100vw) + 16px); width: min(420px, calc(100vw - min(460px, 100vw) - 32px)); } }
 .jump-panel { display: none; }
 @media (max-width: 1080px) {
   .jump-panel:not([hidden]) { display: inline-flex; position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 25; box-shadow: var(--shadow); border-radius: 999px; padding: 8px 16px; }

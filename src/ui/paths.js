@@ -1,6 +1,6 @@
 // 路径分解面板：A 通过哪几条公式路径影响 B（链式法则），与直接重算对照。
 import { h, esc } from './dom.js';
-import { fmtDelta } from '../model/format.js';
+import { fmtDelta, fmtExact } from '../model/format.js';
 import { pathEffects } from '../model/paths.js';
 import { stepOf, stepText } from '../model/sensitivity.js';
 
@@ -36,7 +36,7 @@ export function createPaths(app) {
       return;
     }
     const direct = g.compute({ ...app.sim.inputs, [from]: app.sim.inputs[from] + step })[to] - app.v[to];
-    const dB = (x) => fmtDelta(B, x);
+    const dB = (x) => fmtExact(B, x, { delta: true });
     el.append(h('p', { class: 'hint', style: { margin: '0 0 8px' } },
       `${A.label}${stepText(A, step).replace('±', '+')}。两者之间共有 ${r.count.toLocaleString('en-US')} 条公式路径，经过 ${r.nodes} 个数字；下面是贡献最大的 ${r.paths.length} 条，每个方块下的数字是沿这条路传到该处的变化量。`));
     const list = h('div', { class: 'path-list' });

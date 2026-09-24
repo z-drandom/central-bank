@@ -271,6 +271,22 @@ await t('讲解模式：逐步切页、高亮、文字含现算数字', async ()
   await page.close();
 });
 
+await t('公式实验室：输入表达式得到三行公式', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#book', { waitUntil: 'domcontentloaded' });
+  await page.locator('[data-k="lab"]').click();
+  await page.fill('#lab-expr', 'own26 / ec26');
+  await page.waitForTimeout(100);
+  const out = await page.locator('#lab-expr').evaluate((el) => el.closest('.sheet').innerText);
+  assert.match(out, /30\.27%/);
+  assert.match(out, /代入/);
+  await page.fill('#lab-expr', 'nope + 1');
+  await page.waitForTimeout(100);
+  assert.match(await page.locator('#lab-expr').evaluate((el) => el.closest('.sheet').innerText), /找不到变量/);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await browser.close();
 console.log(`\n# pass ${passes}\n# fail ${failures}`);
 process.exit(failures ? 1 : 0);

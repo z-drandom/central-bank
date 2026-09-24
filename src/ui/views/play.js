@@ -20,6 +20,7 @@ function shuffleOrder(n, seedStr) {
 export function startChallenge(app, ch) {
   app.sim.resetAll();
   app.applyPreset({ label: ch.title, modes: ch.setup.modes, changes: ch.setup.changes });
+  app.challengeStart = app.sim.snapshot();
   app.activeChallenge = ch;
   app.go(ch.tab);
   app.tracker?.show();
@@ -31,11 +32,13 @@ export function createTracker(app) {
   const list = h('div');
   const title = h('b');
   const stamp = h('span', { class: 'stamp', hidden: true }, '达成');
+  const effort = h('div', { class: 'hint' });
   const min = h('button', { class: 'btn ghost', 'aria-label': '收起任务卡', onclick: () => { el.classList.toggle('mini'); } }, '—');
   const el = h('aside', { class: 'tracker', hidden: true, role: 'status', 'aria-live': 'polite' },
     h('div', { class: 'tracker-head' }, h('span', { class: 'hint' }, '挑战中'), title, h('span', { style: { flex: 1 } }), min,
       h('button', { class: 'btn ghost', onclick: () => stop(), 'aria-label': '结束挑战' }, '✕')),
     list,
+    effort,
     h('div', { class: 'tracker-foot' },
       h('button', { class: 'btn', onclick: () => app.activeChallenge && startChallenge(app, app.activeChallenge) }, '重来'),
       h('button', { class: 'btn ghost', onclick: () => app.go('play') }, '所有关卡'),
@@ -53,13 +56,20 @@ export function createTracker(app) {
     const met = goals.filter((g) => g.met).length;
     list.innerHTML = goals.map((g) => `<div class="goal ${g.met ? 'met' : 'miss'}" data-node="${g.id}" style="cursor:pointer"><span class="st">${g.met ? '✓' : '✗'}</span><span>${esc(g.text)}</span><span class="gv">${app.sim.has(g.id) ? esc(fmt(app.sim.spec(g.id), app.v[g.id], { unit: false, dp: app.sim.spec(g.id).unit === 'pct' ? 2 : undefined })) : ''}</span></div>`).join('');
     const all = met === goals.length;
+    // 动了几个旋钮：与挑战开始时的状态相比
+    const st = app.challengeStart;
+    const moved = st ? Object.keys(app.sim.inputs).filter((k) => app.sim.inputs[k] !== st.inputs[k]).length
+      + Object.keys(app.sim.modes).filter((k) => app.sim.modes[k] !== st.modes[k]).length : 0;
+    const ref = ch.solution.length;
+    const stars = moved <= ref ? 3 : moved <= ref + 2 ? 2 : 1;
+    effort.innerHTML = `动了 <b>${moved}</b> 个旋钮（参考解 ${ref} 个）${all ? ` · <span class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>` : ''}`;
     stamp.hidden = !all;
     if (all && !done) {
       done = true;
       const p = load(STORE, { stars: {}, quiz: {} });
-      p.stars[ch.id] = Math.max(p.stars[ch.id] ?? 0, 3);
+      p.stars[ch.id] = Math.max(p.stars[ch.id] ?? 0, stars);
       save(STORE, p);
-      app.flash(`「${ch.title}」达成！`);
+      app.flash(`「${ch.title}」达成！${'★'.repeat(stars)}${stars < 3 ? '（旋钮用得越少星越多）' : ''}`);
     }
     if (!all) done = false;
   }
@@ -90,9 +100,11 @@ export default function play(app) {
       const active = app.activeChallenge?.id === ch.id;
       const goals = active ? evalGoals(ch, app.v, app.b) : ch.goals.map((g) => ({ ...g, met: null }));
       const hint = h('p', { class: 'hint', hidden: true }, `提示：${ch.hint}`);
-      const stars = p.stars[ch.id] ? '★★★' : '';
+      const n = p.stars[ch.id] ?? 0;
+      const stars = n ? '★'.repeat(n) + '☆'.repeat(3 - n) : '';
       grid.append(h('div', { class: `sheet ch-card ${active ? 'active-ch' : ''}` },
         stars ? h('span', { class: 'stamp' }, '达成') : null,
+        stars ? h('span', { class: 'stars', title: '最好成绩：旋钮用得越少星越多' }, stars) : null,
         h('span', { class: 'lvl' }, `${ch.level} · 去「${{ b26: '2026 预算', fb: '四本账', y25: '2025 执行', proj: '十年推演', debt: '债务' }[ch.tab]}」页`),
         h('h4', {}, ch.title),
         h('p', {}, ch.story),

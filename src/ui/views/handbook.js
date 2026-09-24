@@ -4,6 +4,7 @@ import { formulaLines, fmt, kindOf, symHTML } from '../../model/format.js';
 import { MODULES } from '../../model/specs.js';
 import { reconcile } from '../../model/reconcile.js';
 import { GLOSSARY } from '../../model/glossary.js';
+import { evalCustom, LAB_EXAMPLES } from '../../model/lab.js';
 
 export default function handbook(app) {
   const search = h('input', { class: 'search', type: 'search', id: 'fx-search', placeholder: '搜索：名称、符号或变量名，如"付息"、"赤字率"、rc26', 'aria-label': '搜索公式' });
@@ -17,15 +18,53 @@ export default function handbook(app) {
   let mod = 'all';
   let showProj = false;
   const glossBox = h('div', { class: 'gloss' });
-  const panes = { gloss: h('div', { class: 'sheet' }), fx: h('div', { class: 'sheet' }), cross: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
+  // 公式实验室
+  const labIn = h('input', { class: 'search', id: 'lab-expr', value: 'rc26 / r26', 'aria-label': '自定义表达式', style: { fontFamily: 'var(--f-mono)' } });
+  const labUnit = h('select', { class: 'btn', id: 'lab-unit', 'aria-label': '结果单位' },
+    h('option', { value: 'pct' }, '比率 %'), h('option', { value: 'yi' }, '亿元'), h('option', { value: 'wanyi' }, '万亿元（亿元存储）'), h('option', { value: 'wy' }, '万亿元（四本账）'), h('option', { value: 'num' }, '数值'));
+  const labOut = h('div', { style: { marginTop: '10px' } });
+  const labFind = h('input', { class: 'search', type: 'search', placeholder: '找变量名：输入中文，如"地方支出"', 'aria-label': '查找变量名' });
+  const labHits = h('div', { class: 'presets', style: { padding: '6px 0', border: 0 } });
+  const labEx = h('div', { class: 'presets', style: { padding: '6px 0', border: 0 } });
+  for (const [t, src, u] of LAB_EXAMPLES) labEx.append(h('button', { class: 'chip', onclick: () => { labIn.value = src; labUnit.value = u; renderLab(); } }, t));
+  labIn.addEventListener('input', () => renderLab());
+  labUnit.addEventListener('change', () => renderLab());
+  labFind.addEventListener('input', () => {
+    const t = labFind.value.trim();
+    labHits.innerHTML = '';
+    if (!t) return;
+    const hits = [...app.sim.graph.specs.values()].filter((n) => n.label.includes(t) || n.id.includes(t)).slice(0, 12);
+    for (const n of hits) labHits.append(h('button', { class: 'chip', title: n.label, onclick: () => {
+      const pos = labIn.selectionStart ?? labIn.value.length;
+      labIn.value = labIn.value.slice(0, pos) + n.id + labIn.value.slice(labIn.selectionEnd ?? pos);
+      labIn.focus();
+      renderLab();
+    } }, `${n.label} = ${n.id}`));
+  });
+  function renderLab() {
+    const u = labUnit.value;
+    const r = evalCustom(app.sim, labIn.value, { unit: u === 'wanyi' ? 'yi' : u, disp: u === 'wanyi' ? 'wy' : undefined });
+    if (!r.ok) { labOut.innerHTML = `<div class="warn-item">${esc(r.error)}</div>`; return; }
+    const spec = { unit: u === 'wanyi' ? 'yi' : u, disp: u === 'wanyi' ? 'wy' : undefined };
+    const ch = Math.abs(r.value - r.base) > 1e-9 * Math.max(1, Math.abs(r.base));
+    labOut.innerHTML = `<div class="card-val" style="margin-bottom:8px"><span class="big num" style="font:700 24px var(--f-display)">${esc(fmt(spec, r.value))}</span><span class="cmp">${ch ? `基线 ${esc(fmt(spec, r.base))}` : '与基线一致'}</span></div>
+      <div class="fx-table"><div class="k">公式</div><div class="v">${r.lines.sym}</div><div class="k">读法</div><div class="v read">${r.lines.read}</div>${r.lines.pron ? `<div class="k">拟音</div><div class="v read">${esc(r.lines.pron)}</div>` : ''}<div class="k">代入</div><div class="v subst">${r.lines.subst}</div></div>
+      <p class="hint">用到：${r.deps.map((d) => `<button class="chip" data-node="${d}">${esc(app.sim.spec(d).label)}</button>`).join(' ')}</p>`;
+  }
+  const panes = { gloss: h('div', { class: 'sheet' }), lab: h('div', { class: 'sheet' }), fx: h('div', { class: 'sheet' }), cross: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
+  panes.lab.append(
+    h('h3', {}, '公式实验室', h('small', {}, '自己写一个指标：可以用 + − × ÷（写作 + - * /）、括号、sum/min/max/abs，变量名见下方查找')),
+    h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, h('div', { style: { flex: '1 1 320px' } }, labIn), labUnit),
+    labEx, labFind, labHits, labOut,
+  );
   panes.gloss.append(h('h3', {}, '名词解释', h('small', {}, `${GLOSSARY.length} 个词条；右侧数字点开可看公式`)), glossBox);
   panes.cross.append(h('h3', {}, '跨图连接', h('small', {}, '所有"一张图的数字用到了另一张图的数字"的公式。点格子筛选，点公式看卡片')), crossBox);
   panes.fx.append(h('h3', {}, '全部公式', h('small', {}, '每条公式都是模拟器实际计算用的那一条（同一段表达式既用来算，也用来显示）')), search, filters, list);
   panes.assume.append(h('h3', {}, '假设与校准参数清单', h('small', {}, '图中没有、为了把四张图连起来而引入的参数。全部可调')), assumeBox);
   panes.rec.append(h('h3', {}, '与原图逐项对账', h('small', {}, '基线下，模拟器对原图每一个数字的复现情况')), recBox);
-  const el = h('div', {}, tabs, panes.gloss, panes.fx, panes.cross, panes.assume, panes.rec);
+  const el = h('div', {}, tabs, panes.gloss, panes.lab, panes.fx, panes.cross, panes.assume, panes.rec);
   let pair = null;
-  for (const [k, t] of [['gloss', '名词'], ['fx', '公式'], ['cross', '跨图连接'], ['assume', '假设清单'], ['rec', '原图对账']]) {
+  for (const [k, t] of [['gloss', '名词'], ['lab', '公式实验室'], ['fx', '公式'], ['cross', '跨图连接'], ['assume', '假设清单'], ['rec', '原图对账']]) {
     tabs.append(h('button', { type: 'button', 'data-k': k, onclick: () => { mode = k; update(); } }, t));
   }
   search.addEventListener('input', () => renderList());
@@ -151,6 +190,7 @@ export default function handbook(app) {
     if (mode === 'rec') renderRec();
     if (mode === 'cross') renderCross();
     if (mode === 'gloss') renderGloss();
+    if (mode === 'lab') renderLab();
   }
 
   return {

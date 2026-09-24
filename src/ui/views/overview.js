@@ -21,7 +21,7 @@ const CLUSTERS = [
 // 跨图连线：from/to 用于判断"这条线上有没有变化在传"，node 为点击后打开的公式
 const LINKS = [
   { from: ['rc25', 'rl25'], to: ['rc26', 'rl26'], node: 'rc26', d: 'M300,112 L408,112', lx: 355, ly: 100, label: '×(1 + g)', sub: '收入基数', title: 'R₂₆ = R₂₅ × (1 + g)：2026 预算收入以 2025 执行数为基数' },
-  { from: ['e_def'], to: ['def26'], node: 'def26', d: 'M300,176 L408,176', lx: 355, ly: 166, label: '×1.07', sub: '国防支出', title: '2026 国防 = 2025 国防（图③）× 1.07' },
+  { from: ['e_def'], to: ['def26'], node: 'def26', d: 'M300,176 L408,176', lx: 355, ly: 166, label: (v) => `×${(1 + v.g_def).toFixed(3)}`, sub: '国防支出', title: '2026 国防 = 2025 国防（图③）× (1 + 国防支出增速)' },
   { from: ['dc26', 'dl26'], to: ['bc1', 'blg1'], node: 'bc1', d: 'M690,112 L798,112', lx: 745, ly: 100, label: '+ 赤字', sub: '变成债务', title: "B′ = B + 赤字 + 专项债 + 特别国债 + 置换" },
   { from: ['bc0', 'rcg'], to: ['int26'], node: 'int26', d: 'M800,200 L692,200', lx: 745, ly: 190, label: 'r × B', sub: '变成付息', title: '中央付息 = 国债平均付息率 × 国债余额' },
   { from: ['dc25', 'dl25'], to: ['bc0', 'blg0'], node: 'bc0', d: 'M160,30 C160,-8 940,-8 940,30', lx: 550, ly: -6, label: 'B = B_obs + ΔD₂₅（反事实：2025 年多借，年末余额同步增加）', sub: '', title: '' },
@@ -66,7 +66,7 @@ function linkSVG(app, l) {
   return `<g data-node="${l.node}" class="ov-link ${active ? 'on' : ''}">
     ${l.title ? `<title>${esc(l.title)}</title>` : ''}<path d="${l.d}" class="ov-path" marker-end="url(#ov-ah${active ? '-on' : ''})"/>
     ${active ? `<path d="${l.d}" class="ov-pulse"/>` : ''}
-    <text x="${l.lx}" y="${l.ly}" text-anchor="${l.anchor ?? 'middle'}" class="ov-lbl">${esc(l.label)}</text>
+    <text x="${l.lx}" y="${l.ly}" text-anchor="${l.anchor ?? 'middle'}" class="ov-lbl">${esc(typeof l.label === 'function' ? l.label(app.v) : l.label)}</text>
     ${l.sub ? `<text x="${l.lx}" y="${l.ly + 14}" text-anchor="${l.anchor ?? 'middle'}" class="t-small">${esc(l.sub)}</text>` : ''}
   </g>`;
 }

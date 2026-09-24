@@ -709,3 +709,5 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 }
 .card-title:focus { outline: none; }
 .card-title:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.summary { font-size: 14px; line-height: 1.8; padding: 8px 12px; margin-bottom: 10px; background: var(--surface-2); border-radius: var(--r); }
+.summary b { font-weight: 600; }

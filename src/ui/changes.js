@@ -4,6 +4,7 @@ import { fmt, fmtDelta, symLineText } from '../model/format.js';
 import { MODULES } from '../model/specs.js';
 import { activeWarnings } from './warnings.js';
 import { deltaParts } from './common.js';
+import { summarize } from '../model/summary.js';
 
 const FILTERS = [
   { key: 'core', label: '全部（不含推演）', test: (s) => s.mod !== 'proj' },
@@ -18,6 +19,7 @@ export function createChanges(app) {
   let filter = 'core';
   let view = 'list';
   const warnBox = h('div', { class: 'warns' });
+  const sumBox = h('div', { class: 'summary' });
   const sum = h('span', { class: 'sum' });
   const chips = h('div', { class: 'presets', style: { padding: '0', border: '0' } });
   const viewBtns = h('div', { class: 'seg', style: { flex: '0 0 auto' } });
@@ -29,6 +31,7 @@ export function createChanges(app) {
       h('span', { class: 'grow' }),
       viewBtns,
     ),
+    sumBox,
     warnBox,
     chips,
     h('div', { style: { height: '8px' } }),
@@ -49,6 +52,12 @@ export function createChanges(app) {
       : '还没有改动。拖动任意滑杆，这里会按依赖顺序列出每一个被牵动的数字和它的公式。';
     for (const b of viewBtns.children) b.setAttribute('aria-pressed', String(b.dataset.v === view));
 
+    const sm = summarize(sim);
+    sumBox.hidden = !sm;
+    if (sm) {
+      const link = (x, cls = '') => `<b class="${cls}" data-node="${x.id}" style="cursor:pointer">${esc(x.label)} ${esc(x.d)}</b>`;
+      sumBox.innerHTML = `你调整了 ${sm.inputs.map((x) => link(x)).join('、')}。${sm.rules.length ? `在「${esc(sm.rules.join('；'))}」下，` : ''}${sm.heads.length ? `变化最大的关键数字是：${sm.heads.map((x) => link(x, x.d.startsWith('+') ? 'up' : 'down')).join('，')}。` : '关键数字没有变化。'}`;
+    }
     warnBox.innerHTML = '';
     for (const w of activeWarnings(app)) {
       warnBox.append(h('div', { class: `warn-item ${w.level === 'info' ? 'info' : ''}`, onclick: () => app.openCard(w.id), style: { cursor: 'pointer' } }, w.msg));

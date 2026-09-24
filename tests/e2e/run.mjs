@@ -304,6 +304,19 @@ await t('反向求解：求出参数值并可一键应用', async () => {
   await page.close();
 });
 
+await t('规则对比表：显示六种规则，点列头切换规则', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => __fiscal.set('g_nom', 0.03));
+  await page.waitForTimeout(400);
+  assert.equal(await page.locator('.rules-tbl thead .chip').count(), 6);
+  await page.locator('.rules-tbl thead .chip', { hasText: '稳定基金兜底' }).click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.evaluate(() => __fiscal.sim.modes.c26), 'stab');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await browser.close();
 console.log(`\n# pass ${passes}\n# fail ${failures}`);
 process.exit(failures ? 1 : 0);

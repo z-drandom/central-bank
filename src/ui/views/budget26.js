@@ -3,6 +3,9 @@ import { h } from '../dom.js';
 import { renderSankey } from '../sankey-view.js';
 import { ledgerHTML } from '../common.js';
 import { OWN26_IDS } from '../../model/specs.js';
+import { compareRules, RULE_ROWS } from '../../model/rulecompare.js';
+import { fmtDelta } from '../../model/format.js';
+import { esc } from '../dom.js';
 
 const CAT = {
   def26: { name: '国防支出', g: 'gr_def26' },
@@ -68,6 +71,15 @@ export function sankeyDef(app) {
 export default function budget26(app) {
   const chart = h('div', { class: 'chart wide' });
   const ledger = h('div');
+  const rules = h('div', { class: 'tbl-wrap' });
+  let rulesTimer = null;
+  rules.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-rule]');
+    if (!b) return;
+    const modes = JSON.parse(b.dataset.rule);
+    for (const [k, v] of Object.entries(modes)) app.setMode(k, v);
+    app.flash('已切换平衡规则（当前数字保持不变，之后的冲击按新规则分摊）');
+  });
   const el = h('div', { style: { display: 'contents' } },
     h('div', { class: 'sheet' },
       h('h3', {}, '资金从哪里来、到哪里去', h('small', {}, '单位：亿元 · 点任何数字看公式 · ▲为较 2025 年执行数增幅')),
@@ -81,13 +93,44 @@ export default function budget26(app) {
       ),
     ),
     h('div', { class: 'sheet' },
+      h('h3', {}, '换个规则会怎样', h('small', {}, '把你当前的改动放到不同平衡规则下重算，表中是相对原图的变化量——看每一列是谁把冲击接住了')),
+      rules,
+    ),
+    h('div', { class: 'sheet' },
       h('h3', {}, '三本小账必须同时平', h('small', {}, '预算恒等式：来源 = 去向。当前平衡规则决定谁是余项')),
       h('div', { class: 'ledger-legend' }, h('span', {}, h('i', { class: 'p' }, '调'), '可调参数'), h('span', {}, h('i', {}, '算'), '由公式算出——换一个平衡规则，看“算”字挪到哪一项')),
       ledger,
     ),
   );
 
+  function renderRules() {
+    if (!app.sim.changedInputs().length) {
+      rules.innerHTML = '<div class="empty">先改一个参数（比如点右侧"经济放缓"），这里会并排显示它在六种规则下分别由谁承担。</div>';
+      return;
+    }
+    const res = compareRules(app.sim);
+    const cur = app.sim.modes;
+    const isCur = (rv) => Object.entries(rv.modes).every(([k, v]) => cur[k] === v || (k === 'absorb' && cur.c26 !== 'rate'));
+    const head = res.map((rv) => `<th class="n"><button class="chip ${isCur(rv) ? 'on' : ''}" data-rule='${JSON.stringify(rv.modes)}' title="切换到这个规则">${esc(rv.label)}</button></th>`).join('');
+    const body = RULE_ROWS.map(([id, label]) => {
+      const cells = res.map((rv) => {
+        const d = rv.delta[id];
+        if (d == null) return '<td class="n hint">—</td>';
+        const sp = app.sim.has(id) ? app.sim.spec(id) : null;
+        const small = Math.abs(d) < 1e-6 * Math.max(1, Math.abs(rv.values[id] ?? 1));
+        const txt = small ? '0' : sp ? fmtDelta(sp, d, { unit: false }) : d.toFixed(2);
+        return `<td class="n ${small ? 'hint' : d > 0 ? 'up' : 'down'}" style="${small ? '' : 'font-weight:600'}">${esc(txt)}</td>`;
+      }).join('');
+      return `<tr class="click" data-node="${id}"><td>${esc(label)}</td>${cells}</tr>`;
+    }).join('');
+    const skipped = [...new Set(res.flatMap((rv) => rv.skipped))];
+    rules.innerHTML = `<table class="tbl rules-tbl"><thead><tr><th>相对原图的变化</th>${head}</tr></thead><tbody>${body}</tbody></table>
+      <p class="hint" style="margin:6px 0 0">点列头可切换到该规则。${skipped.length ? `有 ${skipped.length} 项改动在部分规则下是"余项"（由公式算出），无法直接施加，已跳过：${esc(skipped.map((x) => app.sim.has(x) ? app.sim.spec(x).label : x).join('、'))}。` : ''}</p>`;
+  }
+
   function update() {
+    clearTimeout(rulesTimer);
+    rulesTimer = setTimeout(renderRules, 180);
     chart.innerHTML = renderSankey(app, sankeyDef(app));
     ledger.innerHTML = [
       ledgerHTML(app, [{ id: 'rc26', cls: 'rev' }, '+', { id: 'dc26', cls: 'def' }, '+', { id: 'tstab26', cls: 'xfer', label: '稳定基金调入' }, '+', { id: 'tsoe26', cls: 'xfer', label: '国资预算调入' }, '=', { id: 'ec26', cls: 'total' }], { title: '中央：来源' }),

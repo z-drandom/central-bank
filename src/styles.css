@@ -682,3 +682,5 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .gloss-t b { font: 700 15px var(--f-display); }
 .gloss-item p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.7; }
 .gloss-n { display: flex; flex-wrap: wrap; gap: 4px; }
+.rules-tbl td:first-child, .rules-tbl th:first-child { white-space: nowrap; }
+.rules-tbl th .chip { white-space: nowrap; }

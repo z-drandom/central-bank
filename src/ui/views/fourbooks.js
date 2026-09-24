@@ -178,11 +178,16 @@ export function renderFourBooks(app) {
 export default function fourbooks(app) {
   const chart = h('div', { class: 'chart wide' });
   const ledger = h('div');
+  const years = h('div', { class: 'tbl-wrap' });
   const el = h('div', { style: { display: 'contents' } },
     h('div', { class: 'sheet' },
       h('h3', {}, '四本账之间的钱怎么流', h('small', {}, '2021 年决算，单位：万亿元 · 线越粗流量越大 · 虚线为较小的往来')),
       chart,
       h('div', { class: 'swipe-hint' }, '← 左右滑动查看完整图 →'),
+    ),
+    h('div', { class: 'sheet' },
+      h('h3', {}, '同一套恒等式，三个年份', h('small', {}, '图④的第一本账逻辑同样适用于图③（2025 执行）和图②（2026 预算）。单位：万亿元，点任一数字看公式')),
+      years,
     ),
     h('div', { class: 'sheet' },
       h('h3', {}, '把四本账合起来看', h('small', {}, '合并时剔除账本之间的往来（补贴、调入调出），得到"广义赤字"')),
@@ -191,6 +196,27 @@ export default function fourbooks(app) {
   );
   function update() {
     chart.innerHTML = renderFourBooks(app);
+    const cell = (id, sign = 1) => {
+      if (!id) return '<td class="n hint">—</td>';
+      const spec = app.sim.spec(id);
+      const v = app.v[id] * sign;
+      const w = spec.unit === 'pct' ? `${(v * 100).toFixed(2)}%` : (spec.unit === 'wy' ? v : v / 1e4).toFixed(2);
+      const ch = Math.abs(app.v[id] - app.b[id]) > 1e-9 * Math.max(1, Math.abs(app.b[id]));
+      return `<td class="n" data-node="${id}" style="cursor:pointer;${ch ? 'color:var(--up);font-weight:600' : ''}">${w}</td>`;
+    };
+    const rows = [
+      ['一般公共预算收入', 'f1_rev', 'rev25', 'r26'],
+      ['＋ 调入资金（其他账本、稳定基金、结转结余）', 'f1_tin', 'tin25', 'tin26'],
+      ['＋ 预算赤字', 'f1_def', 'def25', 'd26'],
+      ['− 补充中央预算稳定调节基金', 'f1_tostab', 'e_stab', null],
+      ['＝ 一般公共预算支出（不含补充稳定基金）', 'f1_exp', 'core25', 'e26'],
+      ['实际赤字 = 支出 − 收入', 'f1_realdef', 'realdef25', 'gap26'],
+      ['赤字率', null, 'dr25', 'drate26'],
+    ];
+    years.innerHTML = `<table class="tbl"><thead><tr><th>项目</th><th class="n">2021（图④）</th><th class="n">2025（图③）</th><th class="n">2026 预算（图②）</th></tr></thead><tbody>
+      ${rows.map(([t, a, b, c]) => `<tr><td>${t}</td>${cell(a)}${cell(b)}${cell(c)}</tr>`).join('')}
+      </tbody></table>
+      <p class="hint" style="margin:6px 0 0">三年都满足：收入 + 调入 + 预算赤字 − 补充稳定基金 = 支出；实际赤字 − 预算赤字 = 调入 − 补充稳定基金。2026 年是预算，不安排"补充稳定基金"，这一项为空。四本账是 2021 年数据，与 2025/2026 年模块之间没有数值依赖，只共享这套恒等式。</p>`;
     ledger.innerHTML = [
       ledgerHTML(app, [{ id: 'f1_rev', cls: 'rev' }, '+', { id: 'f1_tin', cls: 'xfer' }, '+', { id: 'f1_def', cls: 'def' }, '=', { id: 'f1_exp', cls: 'exp' }, '+', { id: 'f1_tostab', cls: 'def' }], { title: '第一本账：收入 + 调入 + 预算赤字 = 支出 + 补充稳定基金' }),
       ledgerHTML(app, [{ id: 'f1_exp', cls: 'exp' }, '−', { id: 'f1_rev', cls: 'rev' }, '=', { id: 'f1_realdef', cls: 'total' }, '=', { id: 'f1_def', cls: 'def' }, '+', { id: 'f1_tin', cls: 'xfer' }, '−', { id: 'f1_tostab', cls: 'def' }], { title: '实际赤字 = 预算赤字 + 调入资金 − 补充稳定基金（图④：4.34 vs 3.57）' }),

@@ -657,3 +657,10 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .story-card p { margin: 0; font-size: 13px; color: var(--ink-2); }
 .story-card .btn { justify-self: start; }
 @media (max-width: 640px) { .narrator { right: 8px; left: 8px; width: auto; bottom: 8px; } }
+.jump-panel { display: none; }
+@media (max-width: 1080px) {
+  .jump-panel:not([hidden]) { display: inline-flex; position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 25; box-shadow: var(--shadow); border-radius: 999px; padding: 8px 16px; }
+  .narrator:not([hidden]) ~ .jump-panel, .tracker:not([hidden]) ~ .jump-panel { bottom: calc(200px + env(safe-area-inset-bottom, 0px)); }
+}
+.xmat th { white-space: nowrap; }
+.xmat td .chip { min-width: 34px; }

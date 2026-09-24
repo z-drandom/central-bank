@@ -10,16 +10,19 @@ export default function handbook(app) {
   const list = h('div');
   const assumeBox = h('div', { class: 'tbl-wrap' });
   const recBox = h('div', { class: 'tbl-wrap' });
+  const crossBox = h('div');
   const tabs = h('div', { class: 'seg', style: { display: 'inline-flex', marginBottom: '12px' } });
   let mode = 'fx';
   let mod = 'all';
   let showProj = false;
-  const panes = { fx: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
+  const panes = { fx: h('div', { class: 'sheet' }), cross: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
+  panes.cross.append(h('h3', {}, '跨图连接', h('small', {}, '所有"一张图的数字用到了另一张图的数字"的公式。点格子筛选，点公式看卡片')), crossBox);
   panes.fx.append(h('h3', {}, '全部公式', h('small', {}, '每条公式都是模拟器实际计算用的那一条（同一段表达式既用来算，也用来显示）')), search, filters, list);
   panes.assume.append(h('h3', {}, '假设与校准参数清单', h('small', {}, '图中没有、为了把四张图连起来而引入的参数。全部可调')), assumeBox);
   panes.rec.append(h('h3', {}, '与原图逐项对账', h('small', {}, '基线下，模拟器对原图每一个数字的复现情况')), recBox);
-  const el = h('div', {}, tabs, panes.fx, panes.assume, panes.rec);
-  for (const [k, t] of [['fx', '公式'], ['assume', '假设清单'], ['rec', '原图对账']]) {
+  const el = h('div', {}, tabs, panes.fx, panes.cross, panes.assume, panes.rec);
+  let pair = null;
+  for (const [k, t] of [['fx', '公式'], ['cross', '跨图连接'], ['assume', '假设清单'], ['rec', '原图对账']]) {
     tabs.append(h('button', { type: 'button', 'data-k': k, onclick: () => { mode = k; update(); } }, t));
   }
   search.addEventListener('input', () => renderList());
@@ -79,12 +82,57 @@ export default function handbook(app) {
       </tbody></table>`;
   }
 
+  function renderCross() {
+    const g = app.sim.graph;
+    const mods = Object.keys(MODULES);
+    const edges = [];
+    for (const s of g.specs.values()) {
+      for (const d of s.deps) {
+        const ds = g.specs.get(d);
+        if (ds.mod !== s.mod) edges.push({ from: ds, to: s });
+      }
+    }
+    const count = (a, b) => edges.filter((e) => e.from.mod === a && e.to.mod === b).length;
+    const name = (m) => `${MODULES[m].img ? `图${MODULES[m].img} ` : ''}${MODULES[m].short}`;
+    let html = `<div class="tbl-wrap"><table class="tbl xmat"><thead><tr><th>从 ↓ 到 →</th>${mods.map((m) => `<th class="n">${esc(name(m))}</th>`).join('')}</tr></thead><tbody>`;
+    for (const a of mods) {
+      html += `<tr><th>${esc(name(a))}</th>${mods.map((b) => {
+        if (a === b) return '<td class="n hint">·</td>';
+        const n = count(a, b);
+        const on = pair && pair[0] === a && pair[1] === b;
+        return n ? `<td class="n"><button class="chip ${on ? 'on' : ''}" data-pair="${a}|${b}">${n}</button></td>` : '<td class="n hint">0</td>';
+      }).join('')}</tr>`;
+    }
+    html += '</tbody></table></div><p class="note">图④（四本账）一行一列都是 0：它用的是 2021 年决算数据，与 2025/2026 年的模块不共享数值，只共享同一套恒等式（见「四本账」页的"三个年份"表）。其余各图之间的每一条连线都是一条真实参与计算的公式。</p>';
+    const list = edges.filter((e) => !pair || (e.from.mod === pair[0] && e.to.mod === pair[1]))
+      .filter((e) => e.to.mod !== 'proj' || /_(2026|2027)$/.test(e.to.id) || !/_\d{4}$/.test(e.to.id));
+    const seen = new Set();
+    html += `<p class="hint">${pair ? `${esc(name(pair[0]))} → ${esc(name(pair[1]))}：` : '全部：'}${list.length} 条（推演逐年公式只列前两年）</p><div>`;
+    for (const e of list) {
+      if (seen.has(e.to.id)) continue;
+      seen.add(e.to.id);
+      const L = formulaLines(g, e.to.id, app.v);
+      const froms = list.filter((x) => x.to.id === e.to.id).map((x) => x.from.label).join('、');
+      html += `<div class="fx-item" data-node="${e.to.id}"><div class="l1"><span class="tag">${esc(name(e.from.mod))} → ${esc(name(e.to.mod))}</span><b>${esc(e.to.label)}</b><span class="hint">用到：${esc(froms)}</span></div><div class="l2">${L.sym}</div></div>`;
+    }
+    html += '</div>';
+    crossBox.innerHTML = html;
+  }
+  crossBox.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pair]');
+    if (!b) return;
+    const p = b.dataset.pair.split('|');
+    pair = pair && pair[0] === p[0] && pair[1] === p[1] ? null : p;
+    renderCross();
+  });
+
   function update() {
     for (const b of tabs.children) b.setAttribute('aria-pressed', String(b.dataset.k === mode));
     for (const [k, p] of Object.entries(panes)) p.hidden = k !== mode;
     if (mode === 'fx') { renderFilters(); renderList(); }
     if (mode === 'assume') renderAssume();
     if (mode === 'rec') renderRec();
+    if (mode === 'cross') renderCross();
   }
 
   return {

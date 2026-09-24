@@ -47,7 +47,7 @@ export function fmtDelta(spec, d, { unit = true } = {}) {
     case 'yi': s = nf2.format(a); break;
     case 'wanyi': s = (a / 1e4).toFixed(2); break;
     case 'wy': s = a.toFixed(2); break;
-    case 'pct': s = (a * 100).toFixed(2) + ' 个百分点'; break;
+    case 'pct': s = (a * 100).toFixed(a * 100 < 0.01 ? (a * 100 < 0.001 ? 4 : 3) : 2) + ' 个百分点'; break;
     default: s = a.toFixed(2);
   }
   const u = k === 'pct' ? '' : unitText(k);

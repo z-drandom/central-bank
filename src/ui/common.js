@@ -18,7 +18,10 @@ export function deltaParts(app, id, scale) {
   let k = dispKind(s);
   if (scale && (k === 'yi' || k === 'wanyi')) k = scale;
   let txt;
-  if (k === 'pct') txt = `${d >= 0 ? '+' : '−'}${(Math.abs(d) * 100).toFixed(2)}pp`;
+  if (k === 'pct') {
+    const a = Math.abs(d) * 100;
+    txt = `${d >= 0 ? '+' : '−'}${a.toFixed(a < 0.01 ? (a < 0.001 ? 4 : 3) : 2)}pp`;
+  }
   else if (k === 'wanyi') txt = `${d >= 0 ? '+' : '−'}${(Math.abs(d) / 1e4).toFixed(2)}`;
   else if (k === 'yi') txt = `${d >= 0 ? '+' : '−'}${Math.abs(d).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   else txt = fmtDelta(s, d, { unit: false });

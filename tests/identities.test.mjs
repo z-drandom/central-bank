@@ -149,3 +149,12 @@ test('典型传导方向', () => {
   close(s4.values.broad1, s4.base.broad1, '广义不变');
   assert.ok(!changed(s4.values.p_B_2026 + s4.values.p_H_2026, s4.base.p_B_2026 + s4.base.p_H_2026));
 });
+
+test('图④的第一本账恒等式在 2025、2026 年同样成立', () => {
+  const sim = new Sim();
+  const v = sim.values;
+  close(v.core25, v.rev25 + v.tin25 + v.def25 - v.e_stab, '2025');
+  close(v.e26, v.r26 + v.tin26 + v.d26, '2026');
+  close(v.realdef25 - v.def25, v.tin25 - v.e_stab, '2025 实际 − 预算 = 调入 − 补充');
+  close(v.f1_realdef - v.f1_def, v.f1_tin - v.f1_tostab, '2021');
+});

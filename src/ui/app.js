@@ -139,11 +139,25 @@ export function createApp(root) {
     h('div', {}, '数据：图①–④（公众号"微言书"，梦游尘制图）；2025/2026 年数据来自财政部《关于 2025 年中央和地方预算执行情况与 2026 年中央和地方预算草案的报告》，四本账为 2021 年决算。'),
     h('div', {}, '标"假设"的参数是图中没有、为了把各部分连起来而引入的，均可调整；标"校准"的参数由图中数字反推。模拟器用于理解机制，不构成预测。'),
   );
+  // 窄屏：一键跳到参数面板 / 跳回图表
+  const jump = h('button', { class: 'jump-panel btn primary', type: 'button', onclick: () => {
+    const panel = viewHost.querySelector('.panel');
+    const atPanel = jump.dataset.at === 'panel';
+    const target = atPanel ? viewHost.querySelector('.main-col') : panel;
+    target?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  } }, '调参数 ↓');
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      jump.dataset.at = e.isIntersecting ? 'panel' : 'chart';
+      jump.textContent = e.isIntersecting ? '看图 ↑' : '调参数 ↓';
+    }
+  }) : null;
+  app.observePanel = (panel) => { io?.disconnect(); if (panel) io?.observe(panel); jump.hidden = !panel; };
   const tracker = createTracker(app);
   app.tracker = tracker;
   const narrator = createNarrator(app);
   app.narrator = narrator;
-  root.append(h('div', { class: 'app' }, top, viewHost, changes.el, foot), ...card.el, toast, tracker.el, narrator.el);
+  root.append(h('div', { class: 'app' }, top, viewHost, changes.el, foot), ...card.el, toast, tracker.el, narrator.el, jump);
 
   // 高亮：传导链悬停、公式卡片打开时，在当前图表里标出同一个数字
   let hlId = null;
@@ -222,6 +236,7 @@ export function createApp(root) {
     try { if (location.hash.slice(1) !== id) history.replaceState(null, '', `#${id}`); } catch { /* 沙盒中可能不允许 */ }
     tabs.get(id).btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     changes.el.hidden = !!t.view.hideChanges;
+    app.observePanel?.(t.panel?.el ?? null);
     update();
   }
 

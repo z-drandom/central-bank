@@ -6,6 +6,7 @@ import { MODULES } from '../../model/specs.js';
 import { goalSeek } from '../../model/solve.js';
 import { influenceMatrix, MATRIX_COLS } from '../../model/matrix.js';
 import { toDisp, fromDisp } from '../controls.js';
+import { createPhase } from '../phase.js';
 
 export default function sensitivity(app) {
   let target = 'p_d_2035';
@@ -101,8 +102,10 @@ export default function sensitivity(app) {
         }).join('')}</tr>`;
       }).join('')}</tbody></table>`;
   }
+  const phase = createPhase(app);
   const el = h('div', { style: { display: 'grid', gap: '16px' } },
     matSheet,
+    phase.el,
     gsSheet,
     h('div', { class: 'sheet' },
       h('h3', {}, '谁对这个指标影响最大', h('small', {}, '在当前参数和规则下，把每个参数单独上下拨动一步，其余不动')),
@@ -121,6 +124,7 @@ export default function sensitivity(app) {
   function update() {
     if (!gsInit) { fillParams(); gsInit = true; }
     renderMatrix();
+    phase.update();
     for (const b of modeSeg.children) b.setAttribute('aria-pressed', String(b.dataset.m === mode));
     if (!app.sim.has(target)) target = 'p_d_2035';
     const g = app.sim.graph;
@@ -149,8 +153,9 @@ export default function sensitivity(app) {
   return {
     id: 'sens',
     title: '影响与敏感度',
-    heading: '影响矩阵、敏感度与反向求解：谁影响谁、影响多大、要拧多少',
-    lead: '选一个你关心的指标，模拟器会把它上游的每个参数分别拨高、拨低一步，重新计算整张依赖图，按影响大小排队。这是回答"调哪几项会带来多大变化"最系统的办法。',
+    heading: '影响矩阵、双参数相图与反向求解：谁影响谁、一起拧会怎样、要拧多少',
+    lead: '影响矩阵一次只动一个旋钮；相图同时动两个，看它们的效果能不能相加、此消彼长的比率是多少；反向求解告诉你要达到目标得拧到哪；龙卷风图把某个指标上游的所有参数按影响大小排队。每一个数都是重算整张依赖图得到的。',
+    slow: true,
     mods: [],
     el,
     update,

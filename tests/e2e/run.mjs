@@ -328,6 +328,43 @@ await t('复制本次分析：剪贴板被拒时退回可选中的文本框；? 
   await page.close();
 });
 
+await t('双参数相图：切预设、点格子应用两个参数（含规则）、撤销、键盘移动', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#sens', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(300);
+  assert.equal(await page.locator('#phase svg rect[class^="phc-"]').count(), 31 * 31);
+  await page.locator('#phase [data-p="oth"]').click();
+  await page.waitForTimeout(200);
+  assert.equal(await page.locator('#ph-target').inputValue(), 'oth26');
+  assert.match(await page.locator('#phase .ph-math').innerText(), /2,243\.81/);
+  assert.ok(await page.locator('#phase .ph-ref').count() > 0, '应画出"其它 = 0"的参考线');
+  // 点右上角格子：名义增速 8%、赤字率 5%
+  const box = await page.locator('#phase svg').boundingBox();
+  await page.mouse.move(box.x + box.width - 16, box.y + 30);
+  await page.waitForTimeout(80);
+  assert.match(await page.locator('#phase .ph-read').innerText(), /比当前/);
+  await page.mouse.click(box.x + box.width - 16, box.y + 30);
+  await page.waitForTimeout(250);
+  const v = await page.evaluate(() => ({ g: __fiscal.v.g_nom, d: __fiscal.v.dr26 }));
+  assert.ok(Math.abs(v.g - 0.08) < 1e-12 && Math.abs(v.d - 0.05) < 1e-12, JSON.stringify(v));
+  await page.locator('button[aria-label="撤销"]').click();
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => __fiscal.v.g_nom), 0.05);
+  // 预设 rg 使用"支出增速不变"：不改变当前规则，直到应用
+  await page.locator('#phase [data-p="rg"]').click();
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => __fiscal.sim.modes.proj), 'rate');
+  assert.match(await page.locator('#phase').innerText(), /与你当前的规则不同/);
+  await page.locator('#phase svg').focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(250);
+  assert.equal(await page.evaluate(() => __fiscal.sim.modes.proj), 'spend');
+  assert.ok(await page.evaluate(() => __fiscal.v.pg) > 0.045);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

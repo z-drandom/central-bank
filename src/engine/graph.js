@@ -80,6 +80,19 @@ export class Graph {
     return v;
   }
 
+  /** 只算 target 及其上游的求值函数（结果与 compute(inputs)[target] 完全相同，但快得多） */
+  evaluator(target) {
+    const nodes = [...this.upstream(target), target].map((id) => this.specs.get(id));
+    return (inputs = {}) => {
+      const v = {};
+      for (const n of nodes) {
+        if (n.expr == null) v[n.id] = n.id in inputs ? inputs[n.id] : n.base;
+        else v[n.id] = evaluate(n.ast, (x) => v[x]);
+      }
+      return v[target];
+    };
+  }
+
   baseInputs() {
     const o = {};
     for (const n of this.inputs()) o[n.id] = n.base;

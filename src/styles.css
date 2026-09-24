@@ -720,3 +720,43 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .help ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13.5px; }
 kbd { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--rule-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface-2); }
 .copy-area { margin-top: 8px; font-family: var(--f-mono); font-size: 12px; resize: vertical; }
+
+/* 双参数相图 */
+.ph-pick { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+.ph-pick label { display: inline-flex; gap: 6px; align-items: center; max-width: 100%; }
+.ph-pick select { max-width: min(280px, 70vw); }
+.ph-read { min-height: calc(2 * 1.6em + 12px); font-size: 13.5px; line-height: 1.6; padding: 6px 10px; box-sizing: border-box; background: var(--surface-2); border-radius: var(--r); margin: 10px 0 6px; }
+.ph-body { display: grid; gap: 16px; grid-template-columns: minmax(0, 720px) minmax(0, 1fr); align-items: start; margin-top: 4px; }
+.ph-body .note:first-child { margin-top: 10px; }
+@media (max-width: 1100px) { .ph-body { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .ph-read { min-height: calc(4 * 1.6em + 12px); } .ph-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px !important; scrollbar-width: thin; } .ph-chips .chip { flex: 0 0 auto; } }
+.ph-plot { width: 100%; max-width: 720px; }
+.ph-plot svg { display: block; width: 100%; height: auto; touch-action: manipulation; cursor: crosshair; }
+.ph-plot svg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.phc-0 { fill: var(--surface); } .phc-nan { fill: var(--surface-3); }
+.phc-u1 { fill: color-mix(in srgb, var(--up) 7%, var(--surface)); } .phc-d1 { fill: color-mix(in srgb, var(--down) 7%, var(--surface)); }
+.phc-u2 { fill: color-mix(in srgb, var(--up) 14%, var(--surface)); } .phc-d2 { fill: color-mix(in srgb, var(--down) 14%, var(--surface)); }
+.phc-u3 { fill: color-mix(in srgb, var(--up) 21%, var(--surface)); } .phc-d3 { fill: color-mix(in srgb, var(--down) 21%, var(--surface)); }
+.phc-u4 { fill: color-mix(in srgb, var(--up) 28%, var(--surface)); } .phc-d4 { fill: color-mix(in srgb, var(--down) 28%, var(--surface)); }
+.phc-u5 { fill: color-mix(in srgb, var(--up) 35%, var(--surface)); } .phc-d5 { fill: color-mix(in srgb, var(--down) 35%, var(--surface)); }
+.phc-u6 { fill: color-mix(in srgb, var(--up) 42%, var(--surface)); } .phc-d6 { fill: color-mix(in srgb, var(--down) 42%, var(--surface)); }
+.phc-u7 { fill: color-mix(in srgb, var(--up) 49%, var(--surface)); } .phc-d7 { fill: color-mix(in srgb, var(--down) 49%, var(--surface)); }
+.phc-u8 { fill: color-mix(in srgb, var(--up) 56%, var(--surface)); } .phc-d8 { fill: color-mix(in srgb, var(--down) 56%, var(--surface)); }
+.phc-u9 { fill: color-mix(in srgb, var(--up) 63%, var(--surface)); } .phc-d9 { fill: color-mix(in srgb, var(--down) 63%, var(--surface)); }
+.phc-u10 { fill: color-mix(in srgb, var(--up) 70%, var(--surface)); } .phc-d10 { fill: color-mix(in srgb, var(--down) 70%, var(--surface)); }
+.ph-iso { fill: none; stroke: var(--ink); stroke-width: 1; opacity: .35; stroke-linecap: round; }
+.ph-now { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }
+.ph-ref { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-dasharray: 7 4; stroke-linecap: round; }
+.ph-lab { font: 11px var(--f-mono); fill: var(--ink-2); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.ph-lab-ref { fill: var(--gold); font-weight: 700; }
+.ph-axis line { stroke: var(--rule-strong); }
+.ph-axis text { font: 11px var(--f-mono); fill: var(--ink-3); }
+.ph-title { font: 12px var(--f-body); fill: var(--ink-2); }
+.ph-dot { fill: var(--ink); stroke: var(--surface); stroke-width: 2.5; pointer-events: none; }
+.ph-cur { fill: none; stroke: var(--ink); stroke-width: 2; pointer-events: none; }
+.ph-math { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); margin-top: 12px; }
+.ph-math h4 { margin: 0 0 6px; font: 600 13.5px var(--f-body); }
+.ph-table { margin-top: 10px; font-size: 13px; }
+.ph-table summary { cursor: pointer; color: var(--ink-2); }
+.legend i.lg-line { height: 3px; width: 16px; vertical-align: 3px; }
+.legend i.lg-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }

@@ -155,6 +155,7 @@ export default function debt(app) {
       h('h3', {}, '债务积木（按比例）', h('small', {}, '块的高度与余额成正比；斜纹 = 2026 年新增；红色虚线 = GDP')),
       h('div', { style: { marginBottom: '8px' } }, seg),
       chart,
+      h('div', { class: 'swipe-hint' }, '← 左右滑动查看完整图 →'),
     ),
     h('div', { class: 'sheet' },
       h('h3', {}, '隐性债务有多大？取决于口径', h('small', {}, '图①给出的区间：106.55 ~ 147.88 万亿。竖线 = 2025 年 GDP。点击一行切换口径')),

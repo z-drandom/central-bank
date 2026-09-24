@@ -182,6 +182,7 @@ export default function fourbooks(app) {
     h('div', { class: 'sheet' },
       h('h3', {}, '四本账之间的钱怎么流', h('small', {}, '2021 年决算，单位：万亿元 · 线越粗流量越大 · 虚线为较小的往来')),
       chart,
+      h('div', { class: 'swipe-hint' }, '← 左右滑动查看完整图 →'),
     ),
     h('div', { class: 'sheet' },
       h('h3', {}, '把四本账合起来看', h('small', {}, '合并时剔除账本之间的往来（补贴、调入调出），得到"广义赤字"')),

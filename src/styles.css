@@ -91,6 +91,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { background: var(--paper); }
 body {
   margin: 0;
@@ -588,3 +589,19 @@ select.btn { padding: 4px 8px; }
 .ov-link.on .ov-lbl { fill: var(--def); }
 .ov-link text { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
 @media (prefers-reduced-motion: reduce) { .ov-pulse { animation: none; } }
+
+/* 浮动任务卡 */
+.tracker {
+  position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 30;
+  width: min(340px, calc(100vw - 32px));
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 8px; box-shadow: var(--shadow);
+  padding: 10px 12px; display: grid; gap: 6px;
+}
+.tracker-head { display: flex; align-items: center; gap: 8px; }
+.tracker-head b { font: 700 15px var(--f-display); }
+.tracker-foot { display: flex; gap: 6px; }
+.tracker.mini > div:not(.tracker-head), .tracker.mini .stamp { display: none; }
+.tracker .stamp { top: auto; bottom: 10px; right: 12px; }
+.swipe-hint { display: none; font-size: 12px; color: var(--ink-3); text-align: center; margin-top: 4px; }
+@media (max-width: 780px) { .swipe-hint { display: block; } }
+@media (max-width: 640px) { .kpi-bar { display: none; } .kpi-d { font-size: 11px; min-height: 16px; } .kpi-l { font-size: 11px; } .view-head h2 { font-size: 18px; } }

@@ -54,6 +54,7 @@ export default function exec25(app) {
     h('div', { class: 'sheet' },
       h('h3', {}, '16 个税种如何变成一般公共预算收入，又如何花出去', h('small', {}, '单位：亿元')),
       chart,
+      h('div', { class: 'swipe-hint' }, '← 左右滑动查看完整图 →'),
       h('div', { class: 'legend' },
         h('span', {}, h('i', { style: { background: 'var(--rev)' } }), '收入'),
         h('span', {}, h('i', { style: { background: 'var(--exp)' } }), '支出 / 抵减'),

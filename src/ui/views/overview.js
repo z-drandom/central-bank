@@ -84,6 +84,7 @@ export default function overview(app) {
     h('div', { class: 'sheet' },
       h('h3', {}, '四张图是一台机器', h('small', {}, '方框 = 一张图；箭头上写着连接它们的公式。拖动右侧旋钮，看变化沿哪几条箭头传播（亮起的箭头）')),
       map,
+      h('div', { class: 'swipe-hint' }, '← 左右滑动查看完整图 →'),
     ),
     h('div', { class: 'sheet' }, h('h3', {}, '钱是怎么转一圈的'), story),
   );

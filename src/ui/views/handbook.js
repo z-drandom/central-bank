@@ -1,5 +1,100 @@
-import { h } from '../dom.js';
-export default function view(app) {
-  const el = h('div', { class: 'sheet' }, '建设中');
-  return { id: 'handbook', title: 'handbook', mods: [], el, update() {} };
+// 公式手册：全部公式、全部假设、与原图逐项对账
+import { h, esc } from '../dom.js';
+import { formulaLines, fmt, kindOf, symHTML } from '../../model/format.js';
+import { MODULES } from '../../model/specs.js';
+import { reconcile } from '../../model/reconcile.js';
+
+export default function handbook(app) {
+  const search = h('input', { class: 'search', type: 'search', id: 'fx-search', placeholder: '搜索：名称、符号或变量名，如"付息"、"赤字率"、rc26', 'aria-label': '搜索公式' });
+  const filters = h('div', { class: 'presets', style: { padding: '8px 0', border: 0 } });
+  const list = h('div');
+  const assumeBox = h('div', { class: 'tbl-wrap' });
+  const recBox = h('div', { class: 'tbl-wrap' });
+  const tabs = h('div', { class: 'seg', style: { display: 'inline-flex', marginBottom: '12px' } });
+  let mode = 'fx';
+  let mod = 'all';
+  let showProj = false;
+  const panes = { fx: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
+  panes.fx.append(h('h3', {}, '全部公式', h('small', {}, '每条公式都是模拟器实际计算用的那一条（同一段表达式既用来算，也用来显示）')), search, filters, list);
+  panes.assume.append(h('h3', {}, '假设与校准参数清单', h('small', {}, '图中没有、为了把四张图连起来而引入的参数。全部可调')), assumeBox);
+  panes.rec.append(h('h3', {}, '与原图逐项对账', h('small', {}, '基线下，模拟器对原图每一个数字的复现情况')), recBox);
+  const el = h('div', {}, tabs, panes.fx, panes.assume, panes.rec);
+  for (const [k, t] of [['fx', '公式'], ['assume', '假设清单'], ['rec', '原图对账']]) {
+    tabs.append(h('button', { type: 'button', 'data-k': k, onclick: () => { mode = k; update(); } }, t));
+  }
+  search.addEventListener('input', () => renderList());
+
+  function renderFilters() {
+    filters.innerHTML = '';
+    const opts = [['all', '全部'], ...Object.entries(MODULES).map(([k, m]) => [k, m.name])];
+    for (const [k, t] of opts) filters.append(h('button', { class: `chip ${mod === k ? 'on' : ''}`, onclick: () => { mod = k; renderFilters(); renderList(); } }, t));
+    filters.append(h('label', { class: 'hint', style: { display: 'inline-flex', gap: '4px', alignItems: 'center', marginLeft: '8px' } },
+      h('input', { type: 'checkbox', checked: showProj, onchange: (e) => { showProj = e.target.checked; renderList(); } }), '显示推演逐年公式'));
+  }
+
+  function renderList() {
+    const qq = search.value.trim().toLowerCase();
+    const g = app.sim.graph;
+    const items = g.order.map((id) => g.specs.get(id)).filter((s) => s.expr != null)
+      .filter((s) => mod === 'all' || s.mod === mod)
+      .filter((s) => showProj || s.mod !== 'proj' || /_(2026|2027)$/.test(s.id))
+      .filter((s) => !qq || s.label.toLowerCase().includes(qq) || s.id.toLowerCase().includes(qq) || (s.sym ?? '').toLowerCase().includes(qq) || (s.note ?? '').includes(qq));
+    list.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    for (const s of items.slice(0, 400)) {
+      const L = formulaLines(g, s.id, app.v);
+      const k = kindOf(s);
+      frag.append(h('div', { class: 'fx-item', 'data-node': s.id, tabindex: '0' },
+        h('div', { class: 'l1' },
+          h('b', {}, s.label),
+          h('span', { class: 'tag' }, MODULES[s.mod].short),
+          h('span', { class: `tag k-${k.key}` }, k.text),
+          h('span', { class: 'num', style: { marginLeft: 'auto', color: 'var(--ink-2)' } }, fmt(s, app.v[s.id])),
+        ),
+        h('div', { class: 'l2', html: L.sym }),
+        h('div', { class: 'hint', html: L.read }),
+      ));
+    }
+    list.append(frag);
+    if (!items.length) list.append(h('div', { class: 'empty' }, '没有匹配的公式'));
+  }
+
+  function renderAssume() {
+    const g = app.sim.graph;
+    const rows = [...g.specs.values()].filter((s) => s.expr == null && (s.tag === 'assume' || s.tag === 'calib' || s.fixed));
+    assumeBox.innerHTML = `<table class="tbl"><thead><tr><th>参数</th><th>模块</th><th>性质</th><th class="n">取值</th><th>依据</th></tr></thead><tbody>
+      ${rows.map((s) => {
+        const k = kindOf(s);
+        return `<tr class="click" data-node="${s.id}"><td>${symHTML(s.sym)} ${esc(s.label)}</td><td>${esc(MODULES[s.mod].short)}</td><td><span class="tag k-${k.key}">${k.text}</span></td><td class="n">${esc(fmt(s, app.v[s.id]))}</td><td style="max-width:48ch">${esc(s.src ?? '')}${s.note ? `<div class="hint">${esc(s.note)}</div>` : ''}</td></tr>`;
+      }).join('')}</tbody></table>`;
+  }
+
+  function renderRec() {
+    const rows = reconcile(app.b);
+    const ok = rows.filter((r) => r.ok).length;
+    const fmtE = (r, v) => (r.pct ? `${(v * 100).toFixed(2)}%` : r.wy ? `${(v / 1e4).toFixed(2)} 万亿` : v.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+    recBox.innerHTML = `<p class="note" style="margin-top:0">共 ${rows.length} 项，<b class="ok">${ok} 项在四舍五入误差内一致</b>。下表用的是基线值（不受你当前调整影响）。</p>
+      <table class="tbl"><thead><tr><th>图</th><th>项目</th><th class="n">原图</th><th class="n">模拟器</th><th class="n">差</th><th>说明</th></tr></thead><tbody>
+      ${rows.map((r) => `<tr class="click" data-node="${r.id}"><td>${r.img}</td><td>${esc(r.label)}</td><td class="n">${fmtE(r, r.expected)}</td><td class="n">${fmtE(r, r.actual)}</td><td class="n ${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : '✗'} ${Math.abs(r.diff) < 1e-9 ? '0' : (r.pct ? `${(r.diff * 100).toFixed(3)}pp` : r.wy ? (r.diff / 1e4).toFixed(4) : r.diff.toFixed(3))}</td><td class="hint">${esc(r.note ?? '')}</td></tr>`).join('')}
+      </tbody></table>`;
+  }
+
+  function update() {
+    for (const b of tabs.children) b.setAttribute('aria-pressed', String(b.dataset.k === mode));
+    for (const [k, p] of Object.entries(panes)) p.hidden = k !== mode;
+    if (mode === 'fx') { renderFilters(); renderList(); }
+    if (mode === 'assume') renderAssume();
+    if (mode === 'rec') renderRec();
+  }
+
+  return {
+    id: 'book',
+    title: '公式手册',
+    heading: '公式手册：每个数字从哪来',
+    lead: '三类公式：<b>会计恒等式</b>（图中直接成立的加总关系）、<b>校准关系</b>（参数由图中数字反推）、<b>假设关系</b>（图中没有，为连接各部分引入）。"原图对账"逐项核对模拟器对四张图的复现。',
+    mods: [],
+    el,
+    update,
+    hideChanges: true,
+  };
 }

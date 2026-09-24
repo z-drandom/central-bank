@@ -8,6 +8,7 @@ import { createCard } from './card.js';
 import { createChanges } from './changes.js';
 import { deltaParts } from './common.js';
 import { VIEWS } from './views/index.js';
+import { createTracker } from './views/play.js';
 
 const KPIS = [
   { id: 'drate26', label: '2026 赤字率', ref: 0.03, refText: '3%：传统警戒参考', max: 0.08 },
@@ -94,7 +95,9 @@ export function createApp(root) {
     h('div', {}, '数据：图①–④（公众号"微言书"，梦游尘制图）；2025/2026 年数据来自财政部《关于 2025 年中央和地方预算执行情况与 2026 年中央和地方预算草案的报告》，四本账为 2021 年决算。'),
     h('div', {}, '标"假设"的参数是图中没有、为了把各部分连起来而引入的，均可调整；标"校准"的参数由图中数字反推。模拟器用于理解机制，不构成预测。'),
   );
-  root.append(h('div', { class: 'app' }, top, viewHost, changes.el, foot), ...card.el, toast);
+  const tracker = createTracker(app);
+  app.tracker = tracker;
+  root.append(h('div', { class: 'app' }, top, viewHost, changes.el, foot), ...card.el, toast, tracker.el);
 
   // 点击任何带 data-node 的数字 → 打开公式卡片
   root.addEventListener('click', (e) => {
@@ -188,6 +191,7 @@ export function createApp(root) {
     t?.view.update();
     changes.update();
     card.update();
+    tracker.update();
     for (const fn of listeners) fn();
     // 顶栏高度供参数面板吸顶
     document.documentElement.style.setProperty('--top-h', `${top.getBoundingClientRect().height}px`);

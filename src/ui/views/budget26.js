@@ -72,6 +72,7 @@ export default function budget26(app) {
     h('div', { class: 'sheet' },
       h('h3', {}, '资金从哪里来、到哪里去', h('small', {}, '单位：亿元 · 点任何数字看公式 · ▲为较 2025 年执行数增幅')),
       chart,
+      h('div', { class: 'swipe-hint' }, '← 左右滑动查看完整图 →'),
       h('div', { class: 'legend' },
         h('span', {}, h('i', { style: { background: 'var(--rev)' } }), '收入'),
         h('span', {}, h('i', { style: { background: 'var(--def)' } }), '赤字（借债）'),

@@ -21,9 +21,10 @@ export function unitText(kind) {
 }
 
 /** 普通展示（卡片、图表标签） */
-export function fmt(spec, v, { unit = true, dp } = {}) {
+export function fmt(spec, v, { unit = true, dp, scale } = {}) {
   if (v == null || Number.isNaN(v)) return '—';
-  const k = dispKind(spec);
+  let k = dispKind(spec);
+  if (scale && (k === 'yi' || k === 'wanyi')) k = scale;
   let s;
   switch (k) {
     case 'yi': s = signed(nf2.format(Math.abs(v)), v); break;

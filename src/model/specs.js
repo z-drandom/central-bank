@@ -544,8 +544,12 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     inp('psp', 'S_{sp}', '每年新增专项债', 44000, { ...W, range: [0, 80000, 100], tag: 'assume' });
     inp('pstb', 'S_{tb}', '每年特别国债', 0, { ...W, range: [0, 30000, 100], tag: 'assume' });
     inp('pswap', 'S_{sw}', '每年置换隐债', 0, { ...W, range: [0, 60000, 100], tag: 'assume', note: '2027 年起每年继续置换的规模（不超过剩余隐债）。' });
-    f('prc', 'r_{c}', '推演期国债付息率', 'rcg + pshift', { unit: 'pct' });
-    f('prl', 'r_{l}', '推演期地方债利率', 'rl + pshift', { unit: 'pct' });
+    inp('pphi', 'φ', '存量利率重定价速度', 0.15, {
+      unit: 'pct', range: [0.02, 1, 0.01], tag: 'assume',
+      note: '每年有多大比例的存量债务按新的市场利率重新定价，约等于 1 ÷ 平均剩余期限（约 6–7 年）。设为 100% 表示利率变化立刻作用于全部存量。',
+    });
+    f('prc', 'm_{c}', '推演期国债市场利率', 'rcg + pshift', { unit: 'pct', note: '新发国债的利率 = 2026 年平均付息率 + 利率变动。' });
+    f('prl', 'm_{l}', '推演期地方债市场利率', 'rl + pshift', { unit: 'pct' });
     f('pdl', 'λ', '地方赤字占全国赤字比重', 'dl26 / d26', { unit: 'pct', note: '沿用 2026 年的中央/地方赤字结构。' });
 
     const y0 = PROJ_START;
@@ -554,6 +558,8 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     f(`p_R_${y0}`, `R_{${y0}}`, `${y0}年一般预算收入`, 'r26', {});
     f(`p_T_${y0}`, `T_{${y0}}`, `${y0}年调入资金`, 'tin26', {});
     f(`p_I_${y0}`, `I_{${y0}}`, `${y0}年一般预算付息`, 'int_gb26', {});
+    f(`p_rc_${y0}`, `r_{c,${y0}}`, `${y0}年国债平均付息率`, 'rcg', { unit: 'pct' });
+    f(`p_rl_${y0}`, `r_{l,${y0}}`, `${y0}年地方债平均利率`, 'rl', { unit: 'pct' });
     f(`p_D_${y0}`, `D_{${y0}}`, `${y0}年赤字`, 'd26', {});
     f(`p_E_${y0}`, `E_{${y0}}`, `${y0}年一般预算支出`, 'e26', {});
     f(`p_PE_${y0}`, `PE_{${y0}}`, `${y0}年非付息支出`, `p_E_${y0} - p_I_${y0}`, {});
@@ -579,7 +585,11 @@ export function buildSpecs(modes = DEFAULT_MODES) {
       f(`p_Y_${y}`, `Y_{${y}}`, `${y}年GDP`, `p_Y_${p} * (1 + pg)`, W);
       f(`p_R_${y}`, `R_{${y}}`, `${y}年一般预算收入`, `p_R_${p} * (1 + peps * pg)`, {});
       f(`p_T_${y}`, `T_{${y}}`, `${y}年调入资金`, `p_T_${p} * (1 + pg)`, { kind: 'assume', note: '调入资金按 GDP 同比例增长。' });
-      f(`p_I_${y}`, `I_{${y}}`, `${y}年一般预算付息`, `prc * p_Bc_${p} + prl * p_Blg_${p}`, { note: '付息 = 利率 × 上年末余额（专项债利息由基金预算支付，不在此列）。' });
+      f(`p_rc_${y}`, `r_{c,${y}}`, `${y}年国债平均付息率`, `p_rc_${p} + pphi * (prc - p_rc_${p})`, {
+        unit: 'pct', note: '存量平均利率每年向市场利率靠拢一部分：新发和到期续发的债务按市场利率计息，其余沿用旧利率。',
+      });
+      f(`p_rl_${y}`, `r_{l,${y}}`, `${y}年地方债平均利率`, `p_rl_${p} + pphi * (prl - p_rl_${p})`, { unit: 'pct' });
+      f(`p_I_${y}`, `I_{${y}}`, `${y}年一般预算付息`, `p_rc_${y} * p_Bc_${p} + p_rl_${y} * p_Blg_${p}`, { note: '付息 = 平均利率 × 上年末余额（专项债利息由政府性基金预算支付，不在此列）。' });
       if (M.proj === 'rate') {
         f(`p_D_${y}`, `D_{${y}}`, `${y}年赤字`, `pdr * p_Y_${y}`, {});
         f(`p_E_${y}`, `E_{${y}}`, `${y}年一般预算支出`, `p_R_${y} + p_D_${y} + p_T_${y}`, {});

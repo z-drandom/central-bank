@@ -1,0 +1,133 @@
+// 公式卡片：点任何一个数字都会打开。显示 公式 / 读法 / 拟音 / 代入，以及上游、下游。
+import { h, esc } from './dom.js';
+import { fmt, fmtDelta, fmtRel, formulaLines, kindOf, symHTML } from '../model/format.js';
+import { MODULES } from '../model/specs.js';
+import { changed } from '../engine/graph.js';
+import { makeSlider } from './controls.js';
+
+export function createCard(app) {
+  const scrim = h('div', { class: 'scrim', onclick: () => close() });
+  const body = h('div', { class: 'drawer-body' });
+  const back = h('button', { class: 'btn ghost', onclick: () => goBack(), 'aria-label': '返回上一个' }, '← 返回');
+  const drawer = h('aside', { class: 'drawer', role: 'dialog', 'aria-modal': 'false', 'aria-label': '公式卡片' },
+    h('div', { class: 'drawer-head' },
+      back,
+      h('span', { class: 'grow hint' }, '公式卡片'),
+      h('button', { class: 'btn ghost', onclick: () => close(), 'aria-label': '关闭' }, '关闭 ✕'),
+    ),
+    body,
+  );
+  let current = null;
+  let history = [];
+  let slider = null;
+
+  function open(id, { push = true } = {}) {
+    if (!app.sim.has(id)) return;
+    if (push && current && current !== id) history.push(current);
+    current = id;
+    render();
+    drawer.classList.add('open');
+    scrim.classList.add('open');
+  }
+  function goBack() {
+    const id = history.pop();
+    if (id) open(id, { push: false });
+  }
+  function close() {
+    drawer.classList.remove('open');
+    scrim.classList.remove('open');
+    current = null;
+    history = [];
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && current) close();
+  });
+
+  function relItem(id) {
+    const s = app.sim.spec(id);
+    const c = changed(app.v[id], app.b[id]);
+    return h('li', {}, h('button', { onclick: () => open(id) },
+      h('span', { html: `${symHTML(s.sym)} ${esc(s.label)}` }),
+      h('span', { class: `v ${c ? (app.v[id] >= app.b[id] ? 'up' : 'down') : ''}` }, fmt(s, app.v[id])),
+    ));
+  }
+
+  function render() {
+    const id = current;
+    if (!id || !app.sim.has(id)) { close(); return; }
+    const s = app.sim.spec(id);
+    const v = app.v[id];
+    const b = app.b[id];
+    const k = kindOf(s);
+    const mod = MODULES[s.mod];
+    back.disabled = history.length === 0;
+    body.innerHTML = '';
+    slider = null;
+    const isCh = changed(v, b);
+    body.append(
+      h('div', {},
+        h('h2', { class: 'card-title', html: `${esc(s.label)} <span style="font-size:0.8em">${symHTML(s.sym)}</span>` }),
+        h('div', { class: 'tags' },
+          h('span', { class: 'tag' }, `${mod.img ? `图${mod.img} ` : ''}${mod.name}`),
+          h('span', { class: `tag k-${k.key}` }, k.text),
+        ),
+      ),
+      h('div', { class: 'card-val' },
+        h('span', { class: 'big num' }, fmt(s, v)),
+        h('span', { class: 'cmp', html: isCh
+          ? `基线 ${esc(fmt(s, b))}　<b class="${v >= b ? 'up' : 'down'}">${esc(fmtDelta(s, v - b))}</b> ${s.unit === 'pct' ? '' : esc(fmtRel(b, v))}`
+          : '与基线（原图）一致' }),
+      ),
+    );
+    if (s.expr != null) {
+      const L = formulaLines(app.sim.graph, id, app.v, { html: true });
+      const tbl = h('div', { class: 'fx-table' },
+        h('div', { class: 'k' }, '公式'), h('div', { class: 'v', html: L.sym }),
+        h('div', { class: 'k' }, '读法'), h('div', { class: 'v read', html: L.read }),
+      );
+      if (L.pron) tbl.append(h('div', { class: 'k' }, '拟音'), h('div', { class: 'v read' }, L.pron));
+      tbl.append(h('div', { class: 'k' }, '代入'), h('div', { class: 'v subst', html: L.subst }));
+      body.append(tbl);
+    } else if (!s.fixed) {
+      slider = makeSlider(app, id);
+      body.append(h('div', { class: 'card-ctl' }, slider.el));
+    }
+    if (s.note) body.append(h('p', { class: 'note' }, s.note));
+    if (s.src) body.append(h('div', { class: 'src' }, `来源：${s.src}`));
+
+    const deps = s.deps ?? [];
+    if (deps.length) {
+      const ul = h('ul');
+      deps.forEach((d) => ul.append(relItem(d)));
+      body.append(h('div', { class: 'rel' }, h('h4', {}, `由谁决定（直接上游 ${deps.length} 项）`), ul));
+    }
+    const dn = app.sim.graph.dependents.get(id) ?? [];
+    if (dn.length) {
+      const ul = h('ul');
+      dn.slice(0, 40).forEach((d) => ul.append(relItem(d)));
+      const all = app.sim.graph.downstream(id).length;
+      body.append(h('div', { class: 'rel' }, h('h4', {}, `影响谁（直接下游 ${dn.length} 项，全部下游 ${all} 项）`), ul));
+    }
+  }
+
+  function update() {
+    if (!current) return;
+    if (slider && app.sim.isInput(current)) {
+      // 只刷新数值与滑杆，避免拖动时整卡重绘
+      slider.sync();
+      const s = app.sim.spec(current);
+      const big = body.querySelector('.big');
+      if (big) big.textContent = fmt(s, app.v[current]);
+      const cmp = body.querySelector('.cmp');
+      const v = app.v[current];
+      const b = app.b[current];
+      if (cmp) cmp.innerHTML = changed(v, b)
+        ? `基线 ${esc(fmt(s, b))}　<b class="${v >= b ? 'up' : 'down'}">${esc(fmtDelta(s, v - b))}</b> ${s.unit === 'pct' ? '' : esc(fmtRel(b, v))}`
+        : '与基线（原图）一致';
+      return;
+    }
+    render();
+  }
+
+  return { el: [scrim, drawer], open, close, update, get current() { return current; } };
+}

@@ -186,6 +186,14 @@ export default function overview(app) {
       e?.classList.add('ov-reached');
       if (i === play.k) e?.classList.add('ov-now');
     });
+    // 窄屏上图可以横向滑动：把当前这一站滚到可见区域中间
+    const cur = svg.querySelector('.ov-now');
+    if (cur && map.scrollWidth > map.clientWidth + 4) {
+      const mb = map.getBoundingClientRect();
+      const cb = cur.getBoundingClientRect();
+      const left = map.scrollLeft + (cb.left + cb.width / 2) - (mb.left + mb.width / 2);
+      map.scrollTo({ left: Math.max(0, left), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
   }
   const scen = createScenarios(app);
   const TOUR = 'fiscal-sandbox-tour-v1';

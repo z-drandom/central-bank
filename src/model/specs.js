@@ -20,6 +20,7 @@ export const MODE_OPTIONS = {
     options: {
       deficit: { label: '赤字锁定', desc: '赤字是人大批准的数；收支变化由"调入资金"吸收（动用结转结余、稳定调节基金）' },
       transfer: { label: '调入锁定', desc: '调入资金不变；收支变化全部反映为赤字（反事实：如果当年多借/少借）' },
+      cut: { label: '支出调整', desc: '赤字和调入资金都锁定；收入变化由"其它"支出吸收（反事实：少收就少花）' },
     },
   },
   c26: {
@@ -196,15 +197,25 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     f('rev25', 'R_{25}', '2025年一般公共预算收入', 'taxnet25 + nontax', { src, note: '一般公共预算收入 = 税收（扣退税）+ 非税收入。' });
 
     for (const e of EXP_2025) {
+      if (M.y25 === 'cut' && e.id === 'other') continue; // "支出调整"规则下"其它"是余项，见下
       // 国防支出同时是 2026 年国防的基数，不能取 0（增速无定义）
       const lo = e.id === 'def' ? Math.round(e.v * 0.2) : 0;
       inp(`e_${e.id}`, `E_{${e.id}}`, e.name, e.v, { src, group: 'exp', short: e.short, range: [lo, Math.round(e.v * 2), 1] });
+    }
+    if (M.y25 === 'cut') {
+      const rest = EXP_2025.filter((e) => e.id !== 'other').map((e) => `e_${e.id}`);
+      f('e_other', 'E_{other}', '其它', `rev25 + def25 + tin25 - (${rest.join(' + ')})`, {
+        src, group: 'exp', short: '其它', note: '支出调整：赤字和调入资金都已锁定，收入加上它们就是能花的总数，列明各项之外剩下的就是"其它"。',
+      });
     }
     f('exp25', 'E_{25}', '2025年一般公共预算支出', `sum(${EXP_2025.map((e) => `e_${e.id}`).join(', ')})`, {
       src, note: '图③中的支出合计包含"补充中央预算稳定调节基金"1,003.24 亿——这笔钱没有花掉，而是存进了稳定调节基金。',
     });
     f('gap25', 'G_{25}', '收支差额', 'exp25 - rev25', { src, note: '差额 = 支出 − 收入，需要由赤字（借债）和调入资金共同弥补。' });
-    if (M.y25 === 'deficit') {
+    if (M.y25 === 'cut') {
+      inp('def25', 'D_{25}', '2025年全国赤字', DEFICIT_2025, { src, range: [0, 120000, 1], note: '全国人大批准的赤字规模。' });
+      inp('tin25', 'T^{in}_{25}', '2025年调入资金及使用结转结余', TRANSFER_IN_2025, { src, range: [0, 40000, 1] });
+    } else if (M.y25 === 'deficit') {
       inp('def25', 'D_{25}', '2025年全国赤字', DEFICIT_2025, { src, range: [0, 120000, 1], note: '全国人大批准的赤字规模。' });
       f('tin25', 'T^{in}_{25}', '2025年调入资金及使用结转结余', 'gap25 - def25', {
         src, note: '赤字锁定时，调入资金是余项：差额里赤字填不满的部分，靠从稳定调节基金、政府性基金、国有资本经营预算调入以及动用结转结余来补。',

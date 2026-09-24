@@ -6,6 +6,8 @@ import { changed } from '../engine/graph.js';
 import { makeSlider } from './controls.js';
 import { attribute, mainPath } from '../engine/attrib.js';
 import { shapley } from '../model/shapley.js';
+import { createPaths } from './paths.js';
+import { MATRIX_COLS } from '../model/matrix.js';
 
 export function createCard(app) {
   const scrim = h('div', { class: 'scrim', onclick: () => close() });
@@ -22,6 +24,7 @@ export function createCard(app) {
   let current = null;
   let history = [];
   let slider = null;
+  let cardPaths = null; // 参数卡片里的路径分解（随滑杆刷新）
 
   let returnFocus = null;
   function open(id, { push = true } = {}) {
@@ -72,6 +75,7 @@ export function createCard(app) {
     back.disabled = history.length === 0;
     body.innerHTML = '';
     slider = null;
+    cardPaths = null;
     const isCh = changed(v, b);
     body.append(
       h('div', {},
@@ -141,6 +145,20 @@ export function createCard(app) {
       dn.slice(0, 40).forEach((d) => ul.append(relItem(d)));
       const all = app.sim.graph.downstream(id).length;
       body.append(h('div', { class: 'rel' }, h('h4', {}, `影响谁（直接下游 ${dn.length} 项，全部下游 ${all} 项）`), ul));
+    }
+    // 旋钮 → 关键结果的路径分解
+    if (app.sim.isInput(id) && !s.fixed) {
+      const down = new Set(app.sim.graph.downstream(id));
+      const outs = MATRIX_COLS.filter(([c]) => down.has(c));
+      if (outs.length) {
+        const sel = h('select', { class: 'btn', 'aria-label': '选择要追踪的关键结果', style: { maxWidth: '100%' } },
+          h('option', { value: '' }, '选一个关键结果…'),
+          ...outs.map(([c, t]) => h('option', { value: c }, t)));
+        const pv = createPaths(app);
+        sel.addEventListener('change', () => (sel.value ? pv.show(id, sel.value) : pv.hide()));
+        cardPaths = pv;
+        body.append(h('div', { class: 'rel' }, h('h4', {}, '它沿哪几条路影响关键结果'), sel, pv.el));
+      }
     }
   }
 
@@ -249,6 +267,7 @@ export function createCard(app) {
       if (cmp) cmp.innerHTML = changed(v, b)
         ? `基线 ${esc(fmt(s, b))}　<b class="${v >= b ? 'up' : 'down'}">${esc(fmtDelta(s, v - b))}</b> ${s.unit === 'pct' ? '' : esc(fmtRel(b, v))}`
         : '与基线（原图）一致';
+      cardPaths?.update();
       return;
     }
     render();

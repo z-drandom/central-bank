@@ -477,16 +477,22 @@ await t('影响矩阵：点格子显示路径分解，链式法则与直接重�
   await page.waitForTimeout(300);
   await page.locator('td[data-pair="t_vat|r26"]').click();
   await page.waitForTimeout(150);
-  const txt = await page.locator('.paths').innerText();
+  const txt = await page.locator('#matrix .paths').innerText();
   assert.match(txt, /共有 3 条公式路径/);
   assert.match(txt, /= \+7,040\.44 亿元；直接重算 = \+7,040\.44 亿元/);
   assert.equal(await page.locator('.drawer.open').count(), 0, '点格子不应打开公式卡片');
   await page.locator('td[data-pair="g_nom|debt_gdp1"]').focus();
   await page.keyboard.press('Enter');
   await page.waitForTimeout(150);
-  assert.match(await page.locator('.paths h4').innerText(), /2026年名义GDP增速 → /);
-  await page.locator('.paths button[aria-label="关闭路径分解"]').click();
-  assert.equal(await page.locator('.paths').isVisible(), false);
+  assert.match(await page.locator('#matrix .paths h4').innerText(), /2026年名义GDP增速 → /);
+  await page.locator('#matrix .paths button[aria-label="关闭路径分解"]').click();
+  assert.equal(await page.locator('#matrix .paths').isVisible(), false);
+  // 参数卡片里也能追踪
+  await page.evaluate(() => __fiscal.openCard('g_nom'));
+  await page.waitForTimeout(150);
+  await page.selectOption('.drawer select[aria-label="选择要追踪的关键结果"]', 'oth26');
+  await page.waitForTimeout(150);
+  assert.match(await page.locator('.drawer .paths').innerText(), /直接重算 = \+1,500\.74 亿元/);
   assert.deepEqual(page.errors, []);
   await page.close();
 });

@@ -442,7 +442,7 @@ g[data-node]:hover .t-name, g[data-node]:hover .t-big { text-decoration: underli
 .fb-box.changed { stroke: var(--up); stroke-width: 2.2; }
 .fb-arrow { fill: none; stroke-linecap: round; }
 .fb-arrow.a-xfer { stroke: var(--xfer); } .fb-arrow.a-rev { stroke: var(--rev); } .fb-arrow.a-exp { stroke: var(--exp); } .fb-arrow.a-gold { stroke: var(--gold); } .fb-arrow.a-def { stroke: var(--def); } .fb-arrow.a-muted { stroke: var(--ink-3); }
-.fb-tab { fill: var(--xfer); } .fb-tab-t { fill: #fff; font: 700 13px var(--f-display); }
+.fb-tab { fill: var(--blk-xfer); } .fb-tab-t { fill: #fff; font: 700 13px var(--f-display); }
 .fb-op { fill: var(--ink-3); font: 700 22px var(--f-display); }
 
 /* 表格 */

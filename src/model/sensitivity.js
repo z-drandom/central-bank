@@ -22,19 +22,25 @@ export function stepText(spec, step) {
  * 只计算目标的上游参数（其余参数影响恒为 0）。
  */
 export function tornado(graph, inputs, target, { mode = 'mixed', limit = 20 } = {}) {
-  const now = graph.compute(inputs);
+  // 只算目标及其上游（结果与整图重算相同）
+  const f = graph.evaluator(target);
+  const now = f(inputs);
   const up = new Set(graph.upstream(target));
   const rows = [];
+  const probe = { ...inputs };
   for (const n of graph.inputs()) {
     if (n.fixed || !up.has(n.id)) continue;
     const step = stepOf(n, mode);
     const cur = inputs[n.id] ?? n.base;
-    const vu = graph.compute({ ...inputs, [n.id]: cur + step })[target];
-    const vd = graph.compute({ ...inputs, [n.id]: cur - step })[target];
-    rows.push({ id: n.id, step, up: vu - now[target], down: vd - now[target] });
+    probe[n.id] = cur + step;
+    const vu = f(probe);
+    probe[n.id] = cur - step;
+    const vd = f(probe);
+    probe[n.id] = cur;
+    rows.push({ id: n.id, step, up: vu - now, down: vd - now });
   }
   rows.sort((a, b) => Math.max(Math.abs(b.up), Math.abs(b.down)) - Math.max(Math.abs(a.up), Math.abs(a.down)));
-  return { now: now[target], rows: rows.filter((r) => Math.abs(r.up) + Math.abs(r.down) > 1e-12).slice(0, limit), total: rows.length };
+  return { now, rows: rows.filter((r) => Math.abs(r.up) + Math.abs(r.down) > 1e-12).slice(0, limit), total: rows.length };
 }
 
 export const TARGETS = [

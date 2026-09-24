@@ -1,0 +1,40 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { fmt, fmtDelta, fmtRel, symHTML, symText, formulaLines } from '../src/model/format.js';
+import { Sim } from '../src/model/sim.js';
+
+const yi = { unit: 'yi' };
+const wanyi = { unit: 'yi', disp: 'wy' };
+const pct = { unit: 'pct' };
+
+test('数字格式：亿元两位小数、万亿换算、百分比、负号用 U+2212', () => {
+  assert.equal(fmt(yi, 95670), '95,670.00 亿元');
+  assert.equal(fmt(wanyi, 412300), '41.23 万亿元');
+  assert.equal(fmt(pct, 0.04), '4.00%');
+  assert.equal(fmt(yi, -1234.5), '−1,234.50 亿元');
+  assert.equal(fmt(yi, NaN), '—');
+  assert.equal(fmt(yi, Infinity), '—');
+  assert.equal(fmtDelta(pct, 0.01), '+1.00 个百分点');
+  assert.equal(fmtDelta(pct, 0.00002), '+0.002 个百分点');
+  assert.equal(fmtDelta(pct, 0.000002), '+0.0002 个百分点');
+  assert.equal(fmtDelta(yi, -500), '−500.00 亿元');
+  assert.equal(fmtRel(100, 110), '+10.0%');
+  assert.equal(fmtRel(0, 5), '');
+});
+
+test('符号渲染：上下标', () => {
+  assert.equal(symText('R_{c,25}'), 'R_c,25');
+  assert.match(symHTML('T^{in}_{25}'), /<sup>in<\/sup><sub>25<\/sub>/);
+  assert.match(symHTML("B'_{c}"), /B'<sub>c<\/sub>/);
+});
+
+test('公式卡片：每个公式节点都能生成四行，代入行以结果和单位结尾', () => {
+  const sim = new Sim();
+  for (const n of sim.graph.specs.values()) {
+    if (n.expr == null) continue;
+    const L = formulaLines(sim.graph, n.id, sim.values, { html: false });
+    assert.ok(L.sym.startsWith(symText(n.sym)), n.id);
+    assert.ok(L.read.startsWith(n.label), n.id);
+    assert.ok(L.subst.endsWith(fmt(n, sim.values[n.id])) || /亿元$|万亿元$/.test(L.subst), `${n.id}: ${L.subst}`);
+  }
+});

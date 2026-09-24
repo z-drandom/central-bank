@@ -12,8 +12,14 @@ test('每条讲解的每一步：状态可重放、高亮的节点都存在、�
       const D = (id) => { assert.ok(sim.has(id), `${story.id}#${k + 1} D(${id})`); return String(sim.values[id] - sim.base[id]); };
       const txt = st.text(T, D);
       assert.ok(txt.length > 20);
-      // 讲的"变化"必须真的发生了：focus 里至少一个节点相对基线有变化
-      assert.ok((st.focus ?? []).some((id) => Math.abs(sim.values[id] - sim.base[id]) > 1e-9), `${story.id} 第 ${k + 1} 步的高亮节点都没有变化`);
+      const moved = (id) => Math.abs(sim.values[id] - sim.base[id]) > 1e-9 * Math.max(1, Math.abs(sim.base[id]));
+      if (st.expectSame) {
+        // 文字声称"不变"的步骤：高亮的数字必须确实没变
+        assert.ok((st.focus ?? []).every((id) => !moved(id)), `${story.id} 第 ${k + 1} 步声称不变，但高亮节点有变化`);
+      } else {
+        // 讲的"变化"必须真的发生了：focus 里至少一个节点相对基线有变化
+        assert.ok((st.focus ?? []).some(moved), `${story.id} 第 ${k + 1} 步的高亮节点都没有变化`);
+      }
     });
   }
 });

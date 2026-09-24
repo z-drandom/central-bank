@@ -1,7 +1,7 @@
 // 图③ 2025 年全国一般公共预算执行情况
 import { h } from '../dom.js';
 import { renderSankey } from '../sankey-view.js';
-import { ledgerHTML, termHTML } from '../common.js';
+import { ledgerHTML } from '../common.js';
 import { TAXES_2025, EXP_2025 } from '../../model/data.js';
 import { TAX_IDS, EXP25_IDS } from '../../model/specs.js';
 import { fmt } from '../../model/format.js';

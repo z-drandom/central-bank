@@ -1,5 +1,5 @@
 // 参数面板：平衡规则开关 + 分组滑杆。每个滑杆标出原图基线位置（金色刻度）。
-import { h, esc } from './dom.js';
+import { h } from './dom.js';
 import { dispKind, fmt } from '../model/format.js';
 import { MODE_OPTIONS } from '../model/specs.js';
 import { changed } from '../engine/graph.js';
@@ -193,4 +193,3 @@ export function createPanel(app, config) {
   return { el, update, rebuild: build };
 }
 
-export { esc };

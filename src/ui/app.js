@@ -1,8 +1,9 @@
 // 应用外壳：顶栏指标、标签页、参数面板、传导链、公式卡片，以及统一的刷新循环。
 import { Sim } from '../model/sim.js';
 import { fmt } from '../model/format.js';
+import { MODE_OPTIONS } from '../model/specs.js';
 import { changed } from '../engine/graph.js';
-import { h, $, $$ } from './dom.js';
+import { h } from './dom.js';
 import { createPanel } from './controls.js';
 import { createCard } from './card.js';
 import { createChanges } from './changes.js';
@@ -105,15 +106,16 @@ export function createApp(root) {
 
   // ---------- 顶栏 ----------
   const kpiEls = KPIS.map((k) => {
+    const lab = h('span', { class: 'kpi-l' }, k.label);
     const v = h('span', { class: 'kpi-v num' });
     const d = h('span', { class: 'kpi-d num' });
     const bar = h('i');
     const refMark = k.ref != null ? h('span', { style: { position: 'absolute', top: '-2px', bottom: '-2px', width: '2px', background: 'var(--gold)', left: `${(k.ref / k.max) * 100}%` } }) : null;
     const el = h('button', { class: 'kpi', type: 'button', title: k.refText ? `金色刻度 = ${k.refText}` : '', onclick: () => app.openCard(k.id) },
-      h('span', { class: 'kpi-l' }, k.label), v, d,
+      lab, v, d,
       h('span', { class: 'kpi-bar', style: { overflow: 'visible' } }, bar, refMark),
     );
-    return { k, el, v, d, bar };
+    return { k, el, v, d, bar, lab };
   });
   const undoBtn = h('button', { class: 'btn ghost', onclick: () => app.undo(), title: '撤销（Ctrl+Z）', 'aria-label': '撤销' }, '↶ 撤销');
   const redoBtn = h('button', { class: 'btn ghost', onclick: () => app.redo(), title: '重做（Ctrl+Shift+Z）', 'aria-label': '重做' }, '↷ 重做');
@@ -211,6 +213,16 @@ export function createApp(root) {
     tabs.set(v.id, { btn: b, badge, view: v, panel: null, wrap: null });
   }
 
+  tabBar.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const ids = [...tabs.keys()];
+    const i = ids.indexOf(current);
+    const next = ids[(i + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length];
+    go(next);
+    tabs.get(next).btn.focus();
+    e.preventDefault();
+  });
+
   function mountView(id) {
     const t = tabs.get(id);
     if (!t.wrap) {
@@ -232,7 +244,10 @@ export function createApp(root) {
   function go(id) {
     if (!tabs.has(id)) id = views[0].id;
     current = id;
-    for (const [k, t] of tabs) t.btn.setAttribute('aria-selected', String(k === id));
+    for (const [k, t] of tabs) {
+      t.btn.setAttribute('aria-selected', String(k === id));
+      t.btn.tabIndex = k === id ? 0 : -1;
+    }
     const t = mountView(id);
     viewHost.replaceChildren(t.wrap);
     try { if (location.hash.slice(1) !== id) history.replaceState(null, '', `#${id}`); } catch { /* 沙盒中可能不允许 */ }
@@ -276,6 +291,7 @@ export function createApp(root) {
 
   function update() {
     for (const x of kpiEls) {
+      if (x.k.id === 'broad_gdp1') x.lab.textContent = `含隐债负债率（${MODE_OPTIONS.scope.options[sim.modes.scope].label}）`;
       const s = sim.spec(x.k.id);
       const v = sim.values[x.k.id];
       x.v.textContent = fmt(s, v);

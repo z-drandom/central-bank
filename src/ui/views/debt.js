@@ -1,8 +1,6 @@
 // 图① 中国公共债务的构成与规模
 import { h, esc } from '../dom.js';
 import { ledgerHTML, deltaParts } from '../common.js';
-import { fmt } from '../../model/format.js';
-import { MODE_OPTIONS } from '../../model/specs.js';
 
 const WY = (v) => (v / 1e4).toFixed(2);
 
@@ -215,4 +213,3 @@ export default function debt(app) {
   };
 }
 
-export { MODE_OPTIONS };

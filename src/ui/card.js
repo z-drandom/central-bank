@@ -112,6 +112,20 @@ export function createCard(app) {
     if (s.expr != null && isCh) body.append(whyBlock(id));
     if (s.note) body.append(h('p', { class: 'note' }, s.note));
     if (s.src) body.append(h('div', { class: 'src' }, `来源：${s.src}`));
+    const TAB = { y25: 'y25', b26: 'b26', debt: 'debt', fb: 'fb', proj: 'proj', macro: 'b26' };
+    if (TAB[s.mod]) {
+      body.append(h('button', { class: 'btn', onclick: () => {
+        const nid = id;
+        close();
+        app.go(TAB[s.mod]);
+        requestAnimationFrame(() => {
+          app.highlight(nid);
+          const el = document.querySelector('#main .hl');
+          if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          else app.flash('这个数字在该页的图里没有单独画出，可在参数面板或表格中找到');
+        });
+      } }, '在图上找到它 →'));
+    }
 
     const deps = s.deps ?? [];
     if (deps.length) {

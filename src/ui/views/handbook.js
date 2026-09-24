@@ -51,7 +51,24 @@ export default function handbook(app) {
       <div class="fx-table"><div class="k">公式</div><div class="v">${r.lines.sym}</div><div class="k">读法</div><div class="v read">${r.lines.read}</div>${r.lines.pron ? `<div class="k">拟音</div><div class="v read">${esc(r.lines.pron)}</div>` : ''}<div class="k">代入</div><div class="v subst">${r.lines.subst}</div></div>
       <p class="hint">用到：${r.deps.map((d) => `<button class="chip" data-node="${d}">${esc(app.sim.spec(d).label)}</button>`).join(' ')}</p>`;
   }
-  const panes = { gloss: h('div', { class: 'sheet' }), lab: h('div', { class: 'sheet' }), fx: h('div', { class: 'sheet' }), cross: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
+  const limits = h('div', { class: 'sheet' },
+    h('h3', {}, '方法与局限', h('small', {}, '这台模拟器能回答什么、不能回答什么')),
+    h('ul', { class: 'limits' },
+      ...[
+        ['会计恒等式是精确的', '收支平衡、债务存量-流量、四本账合并、负债率分解，都是恒等式，在任何参数下都成立（300 组随机参数测试）。'],
+        ['行为关系是简化的', '收入对名义增速的弹性、利率重定价速度、调入资金随 GDP 增长等，都是可调的假设，不是估计出来的模型。'],
+        ['一次只看一个"余项"', '预算恒等式要平，必须有一项被动调整。现实中往往几项同时调整；可以用"规则对比表"看各种极端情形，再自行组合。'],
+        ['2025 → 2026 用"基数 × (1 + 增速)"连接', '2026 年预算按 2025 年执行数编制，所以改动 2025 年会改变 2026 年的基数。这是预算编制方法，不是经济预测。'],
+        ['付息按期初余额计算', '当年新增债务的利息计入下一年；推演中存量利率按"重定价速度"逐步向市场利率靠拢。'],
+        ['四本账是 2021 年数据', '与 2025/2026 年模块不相加，只用来演示账本之间的机制；两者共享同一套恒等式。'],
+        ['隐性债务口径差异很大', '官方 10.5 万亿与市场估算 50 万亿以上的差别，主要来自统计范围，不是计算误差。时点也不同（见"口径修正"参数）。'],
+        ['GDP 是反推的', '由"赤字率≈4%"和名义增速 5% 反推，约 140.2 万亿（2025）、147.25 万亿（2026）。'],
+        ['专项债利息', '专项债利息由政府性基金预算支付，不进入一般预算的"有效利率"；"全口径付息"把它加了回来。'],
+        ['不是预测', '十年推演展示的是"如果假设成立会怎样"，扇形图展示的是假设变动的敏感性，都不代表概率判断。'],
+      ].map(([t, d]) => h('li', {}, h('b', {}, t), ' — ', d)),
+    ),
+  );
+  const panes = { gloss: h('div', { class: 'sheet' }), limits, lab: h('div', { class: 'sheet' }), fx: h('div', { class: 'sheet' }), cross: h('div', { class: 'sheet' }), assume: h('div', { class: 'sheet' }), rec: h('div', { class: 'sheet' }) };
   panes.lab.append(
     h('h3', {}, '公式实验室', h('small', {}, '自己写一个指标：可以用 + − × ÷（写作 + - * /）、括号、sum/min/max/abs，变量名见下方查找')),
     h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, h('div', { style: { flex: '1 1 320px' } }, labIn), labUnit),
@@ -62,9 +79,9 @@ export default function handbook(app) {
   panes.fx.append(h('h3', {}, '全部公式', h('small', {}, '每条公式都是模拟器实际计算用的那一条（同一段表达式既用来算，也用来显示）')), search, filters, list);
   panes.assume.append(h('h3', {}, '假设与校准参数清单', h('small', {}, '图中没有、为了把四张图连起来而引入的参数。全部可调')), assumeBox);
   panes.rec.append(h('h3', {}, '与原图逐项对账', h('small', {}, '基线下，模拟器对原图每一个数字的复现情况')), recBox);
-  const el = h('div', {}, tabs, panes.gloss, panes.lab, panes.fx, panes.cross, panes.assume, panes.rec);
+  const el = h('div', {}, tabs, panes.gloss, panes.limits, panes.lab, panes.fx, panes.cross, panes.assume, panes.rec);
   let pair = null;
-  for (const [k, t] of [['gloss', '名词'], ['lab', '公式实验室'], ['fx', '公式'], ['cross', '跨图连接'], ['assume', '假设清单'], ['rec', '原图对账']]) {
+  for (const [k, t] of [['gloss', '名词'], ['limits', '方法与局限'], ['lab', '公式实验室'], ['fx', '公式'], ['cross', '跨图连接'], ['assume', '假设清单'], ['rec', '原图对账']]) {
     tabs.append(h('button', { type: 'button', 'data-k': k, onclick: () => { mode = k; update(); } }, t));
   }
   search.addEventListener('input', () => renderList());

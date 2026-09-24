@@ -81,6 +81,7 @@ export default function exec25(app) {
       ledgerHTML(app, [{ id: 'core25', cls: 'exp', label: '支出（不含补充稳定基金）' }, '−', { id: 'rev25', cls: 'rev' }, '=', { id: 'realdef25', cls: 'total' }], { title: '实际赤字（图④口径）' }),
     ].join('');
     // 分税制表
+    const neg = (x) => (Math.round(x) === 0 ? '0' : `−${x.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
     const rows = TAXES_2025.filter((t) => t.share > 0).map((t) => {
       const tv = v[`t_${t.id}`];
       const sh = v[`s_${t.id}`];
@@ -90,7 +91,7 @@ export default function exec25(app) {
     split.innerHTML = `<table class="tbl"><thead><tr><th>税种</th><th class="n">2025 年</th><th class="n">中央比例</th><th class="n">归中央</th><th class="n">归地方</th></tr></thead><tbody>
       ${rows.join('')}
       <tr><td>房产税、契税、土地增值税等 8 项地方税</td><td class="n">${localOnly.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td><td class="n">0%</td><td class="n">0</td><td class="n">${localOnly.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td></tr>
-      <tr class="click" data-node="s_rb"><td>出口退税（抵减）</td><td class="n">−${v.rebate.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td><td class="n">${(v.s_rb * 100).toFixed(0)}%</td><td class="n">−${(v.rebate * v.s_rb).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td><td class="n">−${(v.rebate * (1 - v.s_rb)).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td></tr>
+      <tr class="click" data-node="s_rb"><td>出口退税（抵减）</td><td class="n">−${v.rebate.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td><td class="n">${(v.s_rb * 100).toFixed(0)}%</td><td class="n">${neg(v.rebate * v.s_rb)}</td><td class="n">${neg(v.rebate * (1 - v.s_rb))}</td></tr>
       <tr class="click" data-node="s_nt"><td>非税收入（中央占比为校准值）</td><td class="n">${v.nontax.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td><td class="n">${(v.s_nt * 100).toFixed(1)}%</td><td class="n">${(v.nontax * v.s_nt).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td><td class="n">${(v.nontax * (1 - v.s_nt)).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td></tr>
       </tbody></table>
       <div style="margin-top:10px">${ledgerHTML(app, [{ id: 'rc25', cls: 'rev' }, '+', { id: 'rl25', cls: 'rev' }, '=', { id: 'rev25', cls: 'total' }], { title: '2025 年中央 + 地方 = 全国' })}

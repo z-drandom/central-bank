@@ -425,6 +425,25 @@ await t('龙卷风图的前两名一键放进相图', async () => {
   await page.close();
 });
 
+await t('公式卡片：改两个参数后给出 Shapley 归因，合计等于总变化', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { __fiscal.setMany({ dr26: 0.05, g_nom: 0.07 }); });
+  await page.waitForTimeout(200);
+  await page.evaluate(() => __fiscal.openCard('oth26'));
+  await page.waitForTimeout(200);
+  const txt = await page.locator('.shap').innerText();
+  assert.match(txt, /按你改的 2 个参数归因/);
+  assert.match(txt, /\+14,865\.24/);
+  assert.match(txt, /\+3,141\.71/);
+  assert.match(txt, /\+280\.48/);
+  await page.evaluate(() => __fiscal.openCard('dr26'));
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator('.shap').count(), 0, '输入参数的卡片不应有归因');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

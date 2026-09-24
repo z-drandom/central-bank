@@ -5,6 +5,7 @@ import { MODULES } from '../model/specs.js';
 import { changed } from '../engine/graph.js';
 import { makeSlider } from './controls.js';
 import { attribute, mainPath } from '../engine/attrib.js';
+import { shapley } from '../model/shapley.js';
 
 export function createCard(app) {
   const scrim = h('div', { class: 'scrim', onclick: () => close() });
@@ -110,6 +111,7 @@ export function createCard(app) {
       body.append(h('div', { class: 'card-ctl' }, slider.el));
     }
     if (s.expr != null && isCh) body.append(whyBlock(id));
+    if (s.expr != null && isCh) { const sb = shapleyBlock(id); if (sb) body.append(sb); }
     if (s.note) body.append(h('p', { class: 'note' }, s.note));
     if (s.src) body.append(h('div', { class: 'src' }, `来源：${s.src}`));
     const TAB = { y25: 'y25', b26: 'b26', debt: 'debt', fb: 'fb', proj: 'proj', macro: 'b26' };
@@ -174,6 +176,59 @@ export function createCard(app) {
       ));
     }
     box.append(ul, h('div', { class: 'hint' }, `合计 ${fmtDelta(s, a.total)}。贡献 = 只让这一项上游变化、其他保持基线时本项的变化。`));
+    return box;
+  }
+
+  /** 按"你改的参数"归因：只在上游改了至少两个参数时出现 */
+  function shapleyBlock(id) {
+    const g = app.sim.graph;
+    const s = app.sim.spec(id);
+    const r = shapley(g, app.sim.inputs, id);
+    if (!r || r.ids.length < 2) return null;
+    const box = h('div', { class: 'why shap' }, h('h4', {}, `按你改的 ${r.ids.length} 个参数归因`));
+    const val = (x) => x.phi ?? x.alone;
+    const max = Math.max(...r.rows.map((x) => Math.abs(val(x))), Math.abs(r.interaction), 1e-12);
+    const ul = h('div', { class: 'contrib' });
+    for (const x of r.rows) {
+      const ps = g.specs.get(x.id);
+      const v = val(x);
+      ul.append(h('button', { class: 'contrib-row', onclick: () => open(x.id) },
+        h('span', { class: 'c-name' }, ps.label, h('small', {}, ` 单独改：${fmtDelta(s, x.alone, { unit: false })}`)),
+        h('span', { class: 'c-bar' }, h('i', { class: v >= 0 ? 'pos' : 'neg', style: { width: `${(Math.abs(v) / max) * 100}%` } })),
+        h('span', { class: `c-val num ${v >= 0 ? 'up' : 'down'}` }, fmtDelta(s, v, { unit: false })),
+      ));
+    }
+    if (!r.exact) {
+      ul.append(h('div', { class: 'contrib-row' },
+        h('span', { class: 'c-name' }, '交互项', h('small', {}, ' 总变化 − 各参数单独效果之和')),
+        h('span', { class: 'c-bar' }, h('i', { class: 'mix', style: { width: `${(Math.abs(r.interaction) / max) * 100}%` } })),
+        h('span', { class: 'c-val num' }, fmtDelta(s, r.interaction, { unit: false })),
+      ));
+    }
+    box.append(ul);
+    const small = Math.abs(r.interaction) <= 1e-9 * Math.max(1, Math.abs(r.total));
+    const note = r.exact
+      ? `右侧数字是 Shapley 贡献，合计正好等于总变化 ${fmtDelta(s, r.total)}。各参数"单独改"的效果之和为 ${fmtDelta(s, r.sumAlone)}，${small ? '与总变化相同：这几个参数之间没有交互作用。' : `差额 ${fmtDelta(s, r.interaction)} 是交互作用，按对称原则分摊到相关参数上。`}`
+      : `参数多于 10 个，只列出各参数单独改的效果，余下的 ${fmtDelta(s, r.interaction)} 为交互项。合计 ${fmtDelta(s, r.total)}。`;
+    box.append(h('div', { class: 'hint' }, note));
+    if (r.exact) {
+      const tbl = h('div', { class: 'fx-table' },
+        h('div', { class: 'k' }, '公式'), h('div', { class: 'v' }, 'φᵢ = Σₛ |S|! × (n − |S| − 1)! ÷ n! × [f(S ∪ {i}) − f(S)]（S 取遍不含 i 的参数组合）'),
+        h('div', { class: 'k' }, '读法'), h('div', { class: 'v read' }, '参数 i 的贡献 = 把你改的参数按所有可能的先后顺序逐个改回来，i 被改动那一步带来的变化的平均值'),
+        h('div', { class: 'k' }, '拟音'), h('div', { class: 'v read' }, 'φ 读"斐"；Σ 读"西格玛"；! 读"阶乘"'),
+      );
+      if (r.ids.length === 2) {
+        const [a, b] = r.ids;
+        const la = g.specs.get(a).short ?? g.specs.get(a).label;
+        const rowA = r.rows.find((x) => x.id === a);
+        const f = (d) => fmtDelta(s, d, { unit: false });
+        tbl.append(h('div', { class: 'k' }, '代入'), h('div', { class: 'v subst' },
+          `φ(${la}) = ½ × [单独改它 ${f(rowA.alone)}] + ½ × [两个都改 ${f(r.total)} − 只改另一个 ${f(r.rows.find((x) => x.id === b).alone)}] = ${f(rowA.phi)}`));
+      } else {
+        tbl.append(h('div', { class: 'k' }, '代入'), h('div', { class: 'v subst' }, `n = ${r.ids.length}，共 2^${r.ids.length} = ${2 ** r.ids.length} 种参数组合，各重算一次依赖图`));
+      }
+      box.append(tbl);
+    }
     return box;
   }
 

@@ -664,3 +664,6 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 }
 .xmat th { white-space: nowrap; }
 .xmat td .chip { min-width: 34px; }
+.rank { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+.rank-seal { display: inline-grid; place-items: center; width: 46px; height: 46px; border: 2.5px solid var(--def); color: var(--def); font: 900 16px/1 var(--f-display); border-radius: 6px; transform: rotate(-6deg); flex: 0 0 auto; }
+.rank b { font: 700 16px var(--f-display); }

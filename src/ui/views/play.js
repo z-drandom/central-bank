@@ -70,7 +70,9 @@ export function createTracker(app) {
 export default function play(app) {
   const grid = h('div', { class: 'play-grid' });
   const quizBox = h('div', { class: 'sheet', id: 'quiz' });
+  const rank = h('div', { class: 'rank' });
   const el = h('div', {},
+    rank,
     h('div', { class: 'sheet', style: { marginBottom: '16px' } },
       h('h3', {}, '挑战关卡', h('small', {}, '每关先给一个冲击，再由你调参数达成全部目标。任务卡会跟着你切换页面')),
       grid,
@@ -157,9 +159,28 @@ export default function play(app) {
     p.quiz = score;
     save(STORE, p);
     renderQuiz();
+    renderRank();
+  }
+
+  function renderRank() {
+    const p = load(STORE, { stars: {}, quiz: {} });
+    const done = CHALLENGES.filter((c) => p.stars[c.id]).length;
+    const right = Object.values(p.quiz ?? {}).filter(Boolean).length;
+    const titles = [
+      [0, '见习科员', '从第一关开始吧'],
+      [1, '科员', '会算账了'],
+      [3, '处长', '知道缺口会往哪里跑'],
+      [5, '司长', '能在几本账之间调度资金'],
+      [CHALLENGES.length, '部长', '全部关卡通关'],
+    ];
+    let t = titles[0];
+    for (const x of titles) if (done >= x[0]) t = x;
+    if (t[1] === '部长' && right < QUIZ.length - 2) t = titles[3];
+    rank.innerHTML = `<span class="rank-seal">${esc(t[1].slice(-2))}</span><div><b>你的级别：${esc(t[1])}</b><div class="hint">${esc(t[2])} · 已过 ${done} / ${CHALLENGES.length} 关 · 测验答对 ${right} / ${QUIZ.length} 题${t[1] !== '部长' ? '（全部通关且测验答对 ' + (QUIZ.length - 2) + ' 题以上为"部长"）' : ''}</div></div>`;
   }
 
   function update() {
+    renderRank();
     renderGrid();
     if (!quizBox.childElementCount) renderQuiz();
   }
@@ -168,7 +189,7 @@ export default function play(app) {
     id: 'play',
     title: '挑战',
     heading: '当一回财政部长',
-    lead: '六个关卡：减收、加支、卖地收入下滑、老龄化、税制改革、十年化债。每关都有不止一种解法；参考解经过测试验证可以过关。下面还有十道"先猜后算"——先凭直觉选，再看模型怎么算。',
+    lead: `${CHALLENGES.length} 个关卡：减收、加支、卖地收入下滑、老龄化、税制改革、外贸冲击、十年化债。每关都有不止一种解法；参考解经过测试验证可以过关。下面还有 ${QUIZ.length} 道"先猜后算"——先凭直觉选，再看模型怎么算。`,
     mods: [],
     el,
     update,

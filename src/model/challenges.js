@@ -83,6 +83,21 @@ export const CHALLENGES = [
     solution: [{ id: 'g_tr', set: -0.0627 }],
   },
   {
+    id: 'trade',
+    level: '进阶',
+    title: '外贸冲击',
+    tab: 'b26',
+    story: '2025 年进口骤减：进口环节增值税、消费税和关税各少收两成。这些税全归中央，2026 年中央收入基数随之缩水。怎样守住中央本级支出和对地方转移支付？',
+    setup: { modes: { y25: 'deficit', c26: 'rate', absorb: 'other' }, changes: [{ id: 't_imp', mul: 0.8 }, { id: 't_tar', mul: 0.8 }] },
+    goals: [
+      { text: '中央本级"其它"支出不低于原预算', id: 'oth26', test: (v) => v.oth26 >= OTH26 - 0.01 },
+      { text: '对地方转移支付不低于原预算 104,150 亿', id: 'tr26', test: (v) => v.tr26 >= B2026.transfer - 0.01 },
+      { text: '赤字率不超过 4.2%', id: 'drate26', test: (v) => v.drate26 <= 0.042 + EPS },
+    ],
+    hint: '缺口约 4,200 亿：赤字率每提高 0.1 个百分点约多借 1,470 亿，不够的部分可以多调国有资本经营预算。',
+    solution: [{ id: 'dr26', set: 0.042 }, { id: 'tsoe26', set: 3800 }],
+  },
+  {
     id: 'decade',
     level: '高阶',
     title: '十年化债',

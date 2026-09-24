@@ -31,15 +31,15 @@ function rangeOf(spec) {
   return { lo: toDisp(spec, lo), hi: toDisp(spec, hi), step: toDisp(spec, step) };
 }
 
-export function makeSlider(app, id, { compact = false } = {}) {
+export function makeSlider(app, id, { compact = false, idPrefix = '' } = {}) {
   const spec = app.sim.spec(id);
   const r = rangeOf(spec);
   const baseD = toDisp(spec, spec.base);
   const wrap = h('div', { class: 'ctl', 'data-ctl': id });
   const name = h('span', { class: 'ctl-name', title: '点击查看公式与来源', onclick: () => app.openCard(id) }, spec.label);
-  const box = h('input', { class: 'ctl-val', type: 'text', inputmode: 'decimal', id: `in-${id}`, 'aria-label': spec.label });
+  const box = h('input', { class: 'ctl-val', type: 'text', inputmode: 'decimal', id: `${idPrefix}in-${id}`, 'aria-label': spec.label });
   const reset = h('button', { class: 'ctl-reset', title: '恢复原图数值', 'aria-label': `恢复 ${spec.label}`, onclick: () => app.set(id, spec.base) }, '↺');
-  const range = h('input', { type: 'range', min: r.lo, max: r.hi, step: r.step, id: `rg-${id}`, 'aria-label': spec.label });
+  const range = h('input', { type: 'range', min: r.lo, max: r.hi, step: r.step, id: `${idPrefix}rg-${id}`, 'aria-label': spec.label });
   const tickPos = Math.min(1, Math.max(0, (baseD - r.lo) / (r.hi - r.lo || 1)));
   const tick = h('span', { class: 'tick', title: `原图/基线：${fmt(spec, spec.base)}`, style: { left: `calc(7px + (100% - 14px) * ${tickPos})` } });
   range.addEventListener('input', () => app.set(id, fromDisp(spec, parseFloat(range.value))));

@@ -4,6 +4,7 @@ import { fmt, fmtDelta, fmtRel, formulaLines, kindOf, symHTML } from '../model/f
 import { MODULES } from '../model/specs.js';
 import { changed } from '../engine/graph.js';
 import { makeSlider } from './controls.js';
+import { attribute, mainPath } from '../engine/attrib.js';
 
 export function createCard(app) {
   const scrim = h('div', { class: 'scrim', onclick: () => close() });
@@ -89,9 +90,10 @@ export function createCard(app) {
       tbl.append(h('div', { class: 'k' }, '代入'), h('div', { class: 'v subst', html: L.subst }));
       body.append(tbl);
     } else if (!s.fixed) {
-      slider = makeSlider(app, id);
+      slider = makeSlider(app, id, { idPrefix: 'card-' });
       body.append(h('div', { class: 'card-ctl' }, slider.el));
     }
+    if (s.expr != null && isCh) body.append(whyBlock(id));
     if (s.note) body.append(h('p', { class: 'note' }, s.note));
     if (s.src) body.append(h('div', { class: 'src' }, `来源：${s.src}`));
 
@@ -108,6 +110,41 @@ export function createCard(app) {
       const all = app.sim.graph.downstream(id).length;
       body.append(h('div', { class: 'rel' }, h('h4', {}, `影响谁（直接下游 ${dn.length} 项，全部下游 ${all} 项）`), ul));
     }
+  }
+
+  function whyBlock(id) {
+    const g = app.sim.graph;
+    const s = app.sim.spec(id);
+    const a = attribute(g, id, app.v, app.b);
+    const box = h('div', { class: 'why' }, h('h4', {}, '为什么变了'));
+    const path = mainPath(g, id, app.v, app.b);
+    if (path.length > 1) {
+      const crumbs = h('div', { class: 'crumbs' });
+      path.forEach((p, i) => {
+        if (i) crumbs.append(h('span', { class: 'arrow' }, '→'));
+        crumbs.append(h('button', { class: `crumb ${p === id ? 'here' : ''}`, onclick: () => open(p) }, app.sim.spec(p).short ?? app.sim.spec(p).label));
+      });
+      box.append(h('div', { class: 'hint' }, '主要传导路径（每一步取贡献最大的上游）：'), crumbs);
+    }
+    const max = Math.max(...a.parts.map((p) => Math.abs(p.contrib)), Math.abs(a.interaction), 1e-12);
+    const ul = h('div', { class: 'contrib' });
+    for (const p of a.parts) {
+      const ps = app.sim.spec(p.id);
+      ul.append(h('button', { class: 'contrib-row', onclick: () => open(p.id) },
+        h('span', { class: 'c-name' }, ps.label, h('small', {}, ` ${fmtDelta(ps, p.delta)}`)),
+        h('span', { class: 'c-bar' }, h('i', { class: p.contrib >= 0 ? 'pos' : 'neg', style: { width: `${(Math.abs(p.contrib) / max) * 100}%` } })),
+        h('span', { class: `c-val num ${p.contrib >= 0 ? 'up' : 'down'}` }, fmtDelta(s, p.contrib, { unit: false })),
+      ));
+    }
+    if (Math.abs(a.interaction) > 1e-9 * Math.max(1, Math.abs(a.total))) {
+      ul.append(h('div', { class: 'contrib-row' },
+        h('span', { class: 'c-name' }, '交互项', h('small', {}, ' 几项同时变化的乘积效应')),
+        h('span', { class: 'c-bar' }, h('i', { class: 'mix', style: { width: `${(Math.abs(a.interaction) / max) * 100}%` } })),
+        h('span', { class: 'c-val num' }, fmtDelta(s, a.interaction, { unit: false })),
+      ));
+    }
+    box.append(ul, h('div', { class: 'hint' }, `合计 ${fmtDelta(s, a.total)}。贡献 = 只让这一项上游变化、其他保持基线时本项的变化。`));
+    return box;
   }
 
   function update() {

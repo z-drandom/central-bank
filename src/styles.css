@@ -605,3 +605,19 @@ select.btn { padding: 4px 8px; }
 .swipe-hint { display: none; font-size: 12px; color: var(--ink-3); text-align: center; margin-top: 4px; }
 @media (max-width: 780px) { .swipe-hint { display: block; } }
 @media (max-width: 640px) { .kpi-bar { display: none; } .kpi-d { font-size: 11px; min-height: 16px; } .kpi-l { font-size: 11px; } .view-head h2 { font-size: 18px; } }
+
+/* 为什么变了 */
+.why { border: 1px solid var(--rule); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; background: color-mix(in srgb, var(--up) 4%, var(--surface)); }
+.why h4 { margin: 0; font: 600 13px/1.3 var(--f-body); color: var(--ink-2); }
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.crumb { border: 1px solid var(--rule-strong); background: var(--surface); border-radius: 4px; padding: 1px 7px; font-size: 12px; }
+.crumb.here { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.crumbs .arrow { color: var(--ink-3); font-size: 12px; }
+.contrib { display: grid; gap: 3px; }
+.contrib-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 0; background: none; padding: 3px 2px; text-align: left; font-size: 12.5px; border-radius: 4px; }
+button.contrib-row:hover { background: var(--surface-2); }
+.contrib-row .c-name small { color: var(--ink-3); }
+.c-bar { height: 8px; background: var(--surface-3); border-radius: 2px; position: relative; overflow: hidden; }
+.c-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; }
+.c-bar i.pos { background: var(--up); } .c-bar i.neg { background: var(--down); } .c-bar i.mix { background: var(--gold); }
+.c-val { font-weight: 600; white-space: nowrap; }

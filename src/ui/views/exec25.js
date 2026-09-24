@@ -11,7 +11,7 @@ export function sankeyDef(app) {
   const nodes = [
     ...TAXES_2025.map((t) => ({ id: `t_${t.id}`, col: 0, color: 'rev', minSlot: 25, label: { pos: 'left', inline: true, name: t.name } })),
     { id: 'tax25', col: 1, color: 'xfer', label: { pos: 'above', name: '税收收入（退税前）' } },
-    { id: 'nontax', col: 1, color: 'rev', gapBefore: 90, label: { pos: 'below', name: '非税收入' } },
+    { id: 'nontax', col: 1, color: 'rev', gapBefore: 90, label: { pos: 'left', name: '非税收入' } },
     { id: 'rebate', col: 2, color: 'exp', minSlot: 30, label: { pos: 'above', name: '出口退税（抵减）' } },
     { id: 'rev25', col: 2, color: 'xfer', gapBefore: 16, label: { pos: 'above', name: '一般公共预算收入', dy: 0 } },
     { id: 'def25', col: 2, color: 'def', gapBefore: 30, label: { pos: 'left', name: '全国一般公共预算赤字' } },
@@ -39,8 +39,9 @@ export function sankeyDef(app) {
     ky: 440 / 300000,
     nodeW: 12,
     gap: 6,
-    colX: (c) => [200, 360, 520, 650, 780, 900][c],
-    colAlign: { 0: 'top', 1: 'top', 2: 'top', 3: 'top', 4: 'top', 5: 'top' },
+    colX: (c) => [238, 384, 530, 660, 780, 896][c],
+    colAlign: { 0: 'top', 1: 'top', 2: 'top', 4: 'top', 5: 'top' },
+    colOffset: { 3: 318 },
     padTop: 40,
     aria: '2025 年全国一般公共预算执行资金流向',
   };

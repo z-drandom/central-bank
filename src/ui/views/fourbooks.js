@@ -193,7 +193,7 @@ export default function fourbooks(app) {
     chart.innerHTML = renderFourBooks(app);
     ledger.innerHTML = [
       ledgerHTML(app, [{ id: 'f1_rev', cls: 'rev' }, '+', { id: 'f1_tin', cls: 'xfer' }, '+', { id: 'f1_def', cls: 'def' }, '=', { id: 'f1_exp', cls: 'exp' }, '+', { id: 'f1_tostab', cls: 'def' }], { title: '第一本账：收入 + 调入 + 预算赤字 = 支出 + 补充稳定基金' }),
-      ledgerHTML(app, [{ id: 'f1_exp', cls: 'exp' }, '−', { id: 'f1_rev', cls: 'rev' }, '=', { id: 'f1_realdef', cls: 'total' }, '　', { id: 'f1_def', cls: 'def' }, '+', { id: 'f1_tin', cls: 'xfer' }, '−', { id: 'f1_tostab', cls: 'def' }], { title: '实际赤字 = 预算赤字 + 调入资金 − 补充稳定基金（图④：4.34 vs 3.57）' }),
+      ledgerHTML(app, [{ id: 'f1_exp', cls: 'exp' }, '−', { id: 'f1_rev', cls: 'rev' }, '=', { id: 'f1_realdef', cls: 'total' }, '=', { id: 'f1_def', cls: 'def' }, '+', { id: 'f1_tin', cls: 'xfer' }, '−', { id: 'f1_tostab', cls: 'def' }], { title: '实际赤字 = 预算赤字 + 调入资金 − 补充稳定基金（图④：4.34 vs 3.57）' }),
       ledgerHTML(app, [{ id: 'fc_exp', cls: 'exp' }, '−', { id: 'fc_rev', cls: 'rev' }, '=', { id: 'fc_gap', cls: 'total' }], { title: '四本账合并：对外支出 − 对外收入 = 广义赤字' }),
       ledgerHTML(app, [{ id: 'f1_def', cls: 'def' }, '+', { id: 'f2_bond', cls: 'def' }, '+', { id: 'f1_carry', cls: 'xfer', label: '动用结转(一般)' }, '+', { id: 'f2_carry', cls: 'xfer', label: '动用结转(基金)' }, '+', { id: 'f3_carry', cls: 'xfer', label: '动用结转(国资)' }, '−', { id: 'f2_next', label: '结转下年(基金)' }, '−', { id: 'f3_next', label: '结转下年(国资)' }, '−', { id: 'fs_net', cls: 'def' }, '−', { id: 'f4_bal', cls: 'hid' }, '=', { id: 'fc_gap2', cls: 'total' }], { title: '同一个广义赤字，按"钱从哪来"拆开——两种算法必然相等' }),
     ].join('');

@@ -218,6 +218,36 @@ export default function overview(app) {
       h('button', { class: 'btn primary', onclick: () => app.narrator.start(st.id) }, '开始讲解'),
     ))),
   );
+  // 问题导航：常见问题 → 对应工具
+  const goTo = (tab, sel, then) => {
+    app.go(tab);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const t = sel ? document.querySelector(sel) : null;
+      (t?.closest('.sheet') ?? t)?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      then?.();
+    }));
+  };
+  const QUESTIONS = [
+    ['这个数是怎么算出来的？', '点任何数字，公式卡片给出"公式 / 读法 / 代入"和它的上下游。', '打开一张卡片', () => app.openCard('oth26')],
+    ['我改一个数，哪些数会跟着变？', '每页底部的"传导链"按依赖顺序列出全部被牵动的数字；总览图可以一站一站回放。', '看传导回放', () => {
+      // 还没有改动时先放一个示例冲击，否则回放无事可放
+      if (!app.sim.changedIds().length) app.applyPreset({ label: '示例：增值税少收 10%', changes: [{ id: 't_vat', mul: 0.9 }] });
+      goTo('overview', '.ov-play', () => { if (!play) startPlay(true); });
+    }],
+    ['A 到底是沿哪几条路影响 B 的？', '影响矩阵里点任一格：链式法则把影响拆到每条公式路径上，并和直接重算对照。', '去影响矩阵', () => goTo('sens', '#matrix')],
+    ['哪几个参数对这个指标最要紧？', '龙卷风图把指标上游的所有参数各拨一步，按影响大小排队。', '去龙卷风图', () => goTo('sens', '#tornado')],
+    ['两个参数一起变，效果能直接相加吗？', '双参数相图逐格重算，给出取舍比率和交互项；公式卡片按你改的参数做 Shapley 归因。', '去双参数相图', () => goTo('sens', '#phase')],
+    ['要达到某个目标，旋钮得拧到哪？', '单目标用二分法，双目标用牛顿法，都在滑杆允许区间内求解，可一键应用。', '去反向求解', () => goTo('sens', '#solve1')],
+    ['同一个冲击，换条规则会由谁兜底？', '"规则对比表"把当前改动放到六种平衡规则下并排比较。', '去规则对比表', () => goTo('b26', '.rules-tbl')],
+    ['十年后会怎样？不确定性有多大？', '十年推演按债务动态恒等式滚动；扇形图同时随机改动四个假设重算 300 次。', '去十年推演', () => goTo('proj', '#fan')],
+    ['怎么把我的结论发给别人？', '"复制本次分析"生成含代入式和归因的文字摘要；情景代码可以原样复现全部改动。', '去情景对比', () => goTo('overview', '#scenarios')],
+  ];
+  const ask = h('div', { class: 'sheet', id: 'ask' },
+    h('h3', {}, '我想知道……', h('small', {}, '每个问题对应一件工具，点按钮直接过去')),
+    h('div', { class: 'ask-grid' }, QUESTIONS.map(([q, d, b, fn]) => h('div', { class: 'ask-card' },
+      h('b', {}, q), h('p', {}, d), h('button', { class: 'btn', type: 'button', onclick: fn }, `${b} →`),
+    ))),
+  );
   const el = h('div', { style: { display: 'contents' } },
     tour,
     h('div', { class: 'sheet' },
@@ -227,6 +257,7 @@ export default function overview(app) {
       h('div', { class: 'ov-play' }, playBtn, stepBtn, playCap),
     ),
     stories,
+    ask,
     h('div', { class: 'sheet' }, h('h3', {}, '钱是怎么转一圈的'), story),
     scen.el,
   );

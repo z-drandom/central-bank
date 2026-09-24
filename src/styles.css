@@ -797,3 +797,10 @@ kbd { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--rule-
 .path-node small { font-size: 11px; }
 .path-sum { white-space: nowrap; font-size: 13px; }
 td[data-pair]:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+/* 总览：问题导航 */
+.ask-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.ask-card { border: 1px solid var(--rule); border-radius: var(--r); padding: 12px; display: grid; gap: 6px; align-content: start; }
+.ask-card b { font: 700 14.5px var(--f-display); }
+.ask-card p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+.ask-card .btn { justify-self: start; margin-top: 2px; }

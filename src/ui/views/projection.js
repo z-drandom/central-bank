@@ -21,7 +21,7 @@ export default function projection(app) {
   yearSel.value = String(year);
   yearSel.addEventListener('change', () => { year = Number(yearSel.value); update(); });
   const fx = h('div');
-  const fanBox = h('div', { class: 'chart' });
+  const fanBox = h('div', { class: 'chart', id: 'fan' });
   const fanNote = h('p', { class: 'hint', style: { margin: '6px 0 0' } });
   let fanTimer = null;
   const table = h('div', { class: 'tbl-wrap' });

@@ -514,6 +514,22 @@ await t('讲解"两个旋钮一起拧"：打开卡片看归因，最后落到相
   await page.close();
 });
 
+await t('总览"我想知道"：按钮跳到对应工具', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#overview', { waitUntil: 'domcontentloaded' });
+  await page.locator('#ask button', { hasText: '去影响矩阵' }).click();
+  await page.waitForTimeout(300);
+  assert.match(page.url(), /#sens$/);
+  await page.evaluate(() => __fiscal.go('overview'));
+  await page.waitForTimeout(150);
+  await page.locator('#ask button', { hasText: '看传导回放' }).click();
+  await page.waitForTimeout(400);
+  assert.equal(await page.locator('#main svg.ov-playing').count(), 1, '应自动开始回放');
+  assert.ok(await page.evaluate(() => __fiscal.sim.changedIds().length) > 0);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

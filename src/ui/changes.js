@@ -174,7 +174,7 @@ export function createChanges(app) {
     const wrap = h('div', { class: 'chart', style: { maxHeight: '560px', overflow: 'auto' } });
     wrap.innerHTML = svg;
     const note = ids.length > MAX ? h('div', { class: 'hint' }, `只显示前 ${MAX} 个（共 ${ids.length} 个）。可用上面的分类筛选。`) : null;
-    return h('div', {}, h('div', { class: 'hint', style: { marginBottom: '6px' } }, '从左到右是传导顺序：黑色是你调整的参数，每条线表示"右边的数字用到了左边的数字"。点任一方块看公式。'), wrap, note);
+    return h('div', {}, h('div', { class: 'hint', style: { marginBottom: '6px' } }, '从左到右是传导顺序：实心深色方块是你调整的参数，每条线表示"右边的数字用到了左边的数字"。点任一方块看公式。'), wrap, note);
   }
 
   update();

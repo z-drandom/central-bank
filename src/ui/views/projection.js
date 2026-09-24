@@ -48,7 +48,7 @@ export default function projection(app) {
       fx,
     ),
     h('div', { class: 'ov-grid', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' } },
-      h('div', { class: 'sheet' }, h('h3', {}, '付息 ÷ 一般预算收入'), small1),
+      h('div', { class: 'sheet' }, h('h3', {}, '付息 ÷ 一般预算收入', h('small', {}, '全口径 = 再加上专项债和城投债的利息')), small1),
       h('div', { class: 'sheet' }, h('h3', {}, '有效利率 r 与名义增速 g', h('small', {}, 'r < g 时，时间站在借债人一边')), small2),
       h('div', { class: 'sheet' }, h('h3', {}, '非付息支出占 GDP', h('small', {}, '真正能花在民生、建设上的钱')), small3),
     ),
@@ -83,7 +83,10 @@ export default function projection(app) {
     ];
     dec.innerHTML = stackChart({ years: YEARS, parts, net: YEARS.map((y) => ({ v: v[`p_dd_${y}`], id: `p_dd_${y}` })), width: 760, height: 250, title: '负债率变动分解' });
     small1.innerHTML = lineChart({
-      series: [{ label: '付息/收入', cls: 'stroke-exp', pts: pts('ib', null, v), base: pts('ib', null, b) }],
+      series: [
+        { label: '全口径', cls: 'stroke-hid', pts: pts('iball', null, v), base: pts('iball', null, b) },
+        { label: '一般预算', cls: 'stroke-exp', pts: pts('ib', null, v), base: pts('ib', null, b) },
+      ],
       refs: [{ y: 0.1, label: '10%' }],
       width: 420, height: 220, yMin: 0, yFmt: (x) => `${(x * 100).toFixed(0)}%`, title: '付息压力',
     });

@@ -673,6 +673,11 @@ export function buildSpecs(modes = DEFAULT_MODES) {
       f(`p_pd_${y}`, `pd_{${y}}`, `${y}年基本赤字率`, `(p_D_${y} - p_I_${y}) / p_Y_${y}`, { unit: 'pct' });
       f(`p_sfa_${y}`, `sf_{${y}}`, `${y}年其他债务融资`, `(pstb + psp + p_sw_${y}) / p_Y_${y}`, { unit: 'pct', note: '专项债、特别国债和置换债不计入赤字，但增加显性债务。' });
     }
+    const yl = PROJ_END;
+    f('p_dstar', 'd^{*}', '长期收敛负债率', `(p_pd_${yl} + p_sfa_${yl}) * (1 + pg) / (pg - p_r_${yl})`, {
+      unit: 'pct', kind: 'identity',
+      note: `若 ${yl} 年的基本赤字率、其他债务融资率、有效利率和名义增速一直保持不变，负债率最终会稳定在这个水平。由 Δd = d·(r − g)/(1 + g) + pd + sf 令 Δd = 0 解出。只有 g > r 时才收敛；g ≤ r 时公式给出负数或无穷，表示负债率会一直上升。`,
+    });
     specs.push(...list);
   }
 

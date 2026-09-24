@@ -70,7 +70,7 @@ export default function projection(app) {
         { label: '含隐债负债率', cls: 'stroke-hid', pts: pts('w', 'broad_gdp0', v), base: pts('w', 'broad_gdp0', b) },
         { label: '政府负债率', cls: 'stroke-xfer', pts: pts('d', 'debt_gdp0', v), base: pts('d', 'debt_gdp0', b) },
       ],
-      refs: [{ y: 0.6, label: '60% 参考线' }],
+      refs: [{ y: 0.6, label: '60% 参考线' }, ...(v.p_dstar > 0 && v.p_dstar < 1.2 * Math.max(v.p_w_2035, v.p_d_2035) ? [{ y: v.p_dstar, label: `长期收敛 ${(v.p_dstar * 100).toFixed(0)}%` }] : [])],
       yMin: 0.4,
       width: 760,
       height: 300,
@@ -101,9 +101,13 @@ export default function projection(app) {
       series: [{ label: '非付息支出/GDP', cls: 'stroke-rev', pts: YEARS.map((y) => ({ x: y, y: v[`p_PE_${y}`] / v[y === PROJ_START ? 'gdp26' : `p_Y_${y}`], id: `p_PE_${y}` })), base: YEARS.map((y) => ({ x: y, y: b[`p_PE_${y}`] / b[y === PROJ_START ? 'gdp26' : `p_Y_${y}`] })) }],
       width: 420, height: 220, yFmt: (x) => `${(x * 100).toFixed(1)}%`, title: '非付息支出占 GDP',
     });
-    ruleHint.innerHTML = app.sim.modes.proj === 'rate'
+    const dstar = v.p_dstar;
+    const dsText = dstar > 0 && Number.isFinite(dstar)
+      ? `按 2035 年的状态一直走下去，政府负债率最终收敛到 <b data-node="p_dstar" style="cursor:pointer;border-bottom:1px dotted">${(dstar * 100).toFixed(1)}%</b>（公式 d* = (pd + sf)·(1 + g)/(g − r)，点开看代入）。`
+      : '按 2035 年的状态，有效利率不低于增速，负债率不会收敛。';
+    ruleHint.innerHTML = dsText + ' ' + (app.sim.modes.proj === 'rate'
       ? '当前规则是<b>赤字率不变</b>：利率上升不会让负债率更高，而是让付息挤占非付息支出（见下方"非付息支出占 GDP"）。想看利率推高负债率，把推演规则切到"支出增速不变"。'
-      : '当前规则是<b>支出增速不变</b>：付息增加直接变成更大的赤字，负债率随之上升。';
+      : '当前规则是<b>支出增速不变</b>：付息增加直接变成更大的赤字，负债率随之上升。');
     // 某一年的分解公式
     const L = formulaLines(app.sim.graph, `p_snow_${year}`, v);
     fx.innerHTML = `${ledgerHTML(app, [{ id: `p_dd_${year}`, cls: 'total', label: `${year} 负债率变动` }, '=', { id: `p_snow_${year}`, cls: 'xfer', label: '滚雪球效应' }, '+', { id: `p_pd_${year}`, cls: 'def', label: '基本赤字率' }, '+', { id: `p_sfa_${year}`, cls: 'gold', label: '其他债务融资' }], { title: '恒等式（精确成立，不是近似）' })}

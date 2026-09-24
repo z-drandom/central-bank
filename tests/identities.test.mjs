@@ -160,3 +160,12 @@ test('图④的第一本账恒等式在 2025、2026 年同样成立', () => {
   close(v.realdef25 - v.def25, v.tin25 - v.e_stab, '2025 实际 − 预算 = 调入 − 补充');
   close(v.f1_realdef - v.f1_def, v.f1_tin - v.f1_tostab, '2021');
 });
+
+test('长期收敛负债率：把 2035 年的状态固定下来迭代，负债率确实收敛到 d*', () => {
+  const sim = new Sim();
+  const v = sim.values;
+  const g = v.pg, r = v.p_r_2035, pd = v.p_pd_2035, sf = v.p_sfa_2035;
+  let d = v.p_d_2035;
+  for (let i = 0; i < 3000; i++) d = d * (1 + r) / (1 + g) + pd + sf;
+  close(d, v.p_dstar, 'd*');
+});

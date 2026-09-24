@@ -689,3 +689,21 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .event-card p { margin: 0; }
 .fixes { display: grid; gap: 6px; }
 .fix { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 6px 8px; background: var(--surface-2); border-radius: 5px; font-size: 13.5px; }
+
+/* 龙卷风图（HTML 版，手机上可重排） */
+.tor { display: grid; gap: 2px; }
+.tor-row { display: grid; grid-template-columns: minmax(150px, 260px) minmax(0, 1fr) 96px; gap: 12px; align-items: center; padding: 4px 6px; border-radius: 5px; cursor: pointer; }
+.tor-row:hover { background: var(--surface-2); }
+.tor-l { display: grid; text-align: right; line-height: 1.3; }
+.tor-l b { font-weight: 500; font-size: 13px; }
+.tor-l small { color: var(--ink-3); font-size: 11px; }
+.tor-bar { position: relative; height: 22px; }
+.tor-bar span { position: absolute; height: 9px; border-radius: 2px; }
+.tor-bar .b-up { top: 2px; background: var(--up); }
+.tor-bar .b-down { top: 12px; background: var(--down); }
+.tor-bar i { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--ink-3); }
+.tor-v { display: grid; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.35; }
+@media (max-width: 640px) {
+  .tor-row { grid-template-columns: minmax(0, 1fr) 84px; gap: 4px 8px; }
+  .tor-l { grid-column: 1 / -1; text-align: left; }
+}

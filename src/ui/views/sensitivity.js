@@ -93,30 +93,21 @@ export default function sensitivity(app) {
     const r = tornado(g, app.sim.inputs, target, { mode, limit: 22 });
     info.innerHTML = `当前值 <b>${esc(fmt(tspec, r.now))}</b>。它的上游共有 ${r.total} 个可调参数，下面按影响大小列出前 ${r.rows.length} 个。`;
     const max = Math.max(...r.rows.flatMap((x) => [Math.abs(x.up), Math.abs(x.down)]), 1e-12);
-    const W = 900, rowH = 30, left = 300, right = 150, mid = left + (W - left - right) / 2, half = (W - left - right) / 2;
-    const H = r.rows.length * rowH + 30;
     const pctTarget = dispKind(tspec) === 'pct';
     const dtext = (d) => (pctTarget ? `${d >= 0 ? '+' : '−'}${Math.abs(d * 100).toFixed(2)}pp` : fmtDelta(tspec, d, { unit: false }));
-    let s = `<line x1="${mid}" x2="${mid}" y1="0" y2="${H - 20}" class="stroke-muted"/>`;
-    r.rows.forEach((row, i) => {
-      const spec = g.specs.get(row.id);
-      const y = i * rowH + 6;
-      const bar = (d, cls) => {
-        const w = (Math.abs(d) / max) * half;
-        const x = d >= 0 ? mid : mid - w;
-        return `<rect x="${x.toFixed(1)}" y="${y + 3}" width="${Math.max(w, 0.5).toFixed(1)}" height="${rowH - 12}" class="${cls}" rx="2"/>`;
-      };
-      s += `<g data-node="${row.id}" class="sens-row">
-        <rect x="0" y="${y - 2}" width="${W}" height="${rowH}" fill="transparent"/>
-        <text x="${left - 12}" y="${y + 13}" text-anchor="end" class="t-name" style="font-weight:500">${esc(spec.label.length > 18 ? spec.label.slice(0, 18) + '…' : spec.label)}</text>
-        <text x="${left - 12}" y="${y + 25}" text-anchor="end" class="t-small">${esc(MODULES[spec.mod].short)} · ${esc(stepText(spec, row.step))}</text>
-        ${bar(row.up, 'fill-up')}${bar(row.down, 'fill-down')}
-        <text x="${W - right + 10}" y="${y + 13}" class="t-up">${esc(dtext(row.up))}</text>
-        <text x="${W - right + 10}" y="${y + 26}" class="t-down">${esc(dtext(row.down))}</text>
-      </g>`;
-    });
+    const bar = (d, cls) => {
+      const w = (Math.abs(d) / max) * 50;
+      return `<span class="${cls}" style="left:${d >= 0 ? 50 : 50 - w}%;width:${Math.max(w, 0.3).toFixed(2)}%"></span>`;
+    };
     chart.innerHTML = r.rows.length
-      ? `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="敏感度龙卷风图" style="max-width:980px">${s}</svg>`
+      ? `<div class="tor" role="list">${r.rows.map((row) => {
+        const spec = g.specs.get(row.id);
+        return `<div class="tor-row" role="listitem" data-node="${row.id}" tabindex="0">
+          <div class="tor-l"><b>${esc(spec.label)}</b><small>${esc(MODULES[spec.mod].short)} · ${esc(stepText(spec, row.step))}</small></div>
+          <div class="tor-bar">${bar(row.up, 'b-up')}${bar(row.down, 'b-down')}<i></i></div>
+          <div class="tor-v"><span class="up">${esc(dtext(row.up))}</span><span class="down">${esc(dtext(row.down))}</span></div>
+        </div>`;
+      }).join('')}</div>`
       : '<div class="empty">这个指标在当前规则下没有可调的上游参数。</div>';
   }
 

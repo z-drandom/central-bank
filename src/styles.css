@@ -141,6 +141,7 @@ button { cursor: pointer; }
 }
 .brand p { margin: 0; color: var(--ink-2); font-size: 13px; }
 .brand .spacer { flex: 1; }
+.actions { display: flex; gap: 4px; align-items: center; flex-wrap: nowrap; }
 .btn {
   border: 1px solid var(--rule-strong);
   background: var(--surface);
@@ -500,6 +501,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 1080px) {
+  .top { position: static; }
   .layout { grid-template-columns: minmax(0, 1fr); }
   .panel { position: static; max-height: none; }
   .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -516,8 +518,8 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
   .kpi:nth-child(odd) { border-left: 0; padding-left: 0; }
   .kpi:nth-child(n+3) { border-top: 1px solid var(--rule); }
   .kpi-v { font-size: 18px; }
-  .top { position: static; }
   .chg { grid-template-columns: 50px minmax(0, 1fr) auto; }
+  .actions .btn.ghost { padding: 5px 6px; }
   .chg .vals { display: none; }
   .drawer { top: auto; height: 86vh; width: 100vw; border-left: 0; border-top: 1px solid var(--rule-strong); border-radius: 12px 12px 0 0; transform: translateY(105%); }
   .drawer.open { transform: none; }

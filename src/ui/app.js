@@ -250,16 +250,18 @@ export function createApp(root) {
 
   // 次要面板（传导链、公式手册）用尾随节流：拖动滑杆时最多每 140ms 刷新一次
   const slowTimers = new Map();
+  const slowLast = new Map();
   function slowLater(fn, key = 'view') {
     if (slowTimers.has(key)) { slowTimers.get(key).fn = fn; return; }
     const entry = { fn };
     slowTimers.set(key, entry);
-    const last = entry.last ?? 0;
-    const wait = Math.max(0, 140 - (performance.now() - last));
-    setTimeout(() => { slowTimers.delete(key); entry.fn(); }, first ? 0 : wait);
+    const wait = Math.max(0, 140 - (performance.now() - (slowLast.get(key) ?? -1e9)));
+    setTimeout(() => {
+      slowTimers.delete(key);
+      slowLast.set(key, performance.now());
+      entry.fn();
+    }, wait);
   }
-  let first = true;
-  requestAnimationFrame(() => { first = false; });
 
   function schedule() {
     if (scheduled) return;
@@ -293,7 +295,7 @@ export function createApp(root) {
     t?.panel?.update();
     if (t?.view.slow) slowLater(() => t.view.update());
     else t?.view.update();
-    slowLater(() => changes.update(), 'changes');
+    if (!changes.el.hidden) slowLater(() => changes.update(), 'changes');
     card.update();
     tracker.update();
     narrator.update();

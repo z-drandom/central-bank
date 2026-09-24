@@ -530,6 +530,31 @@ await t('总览"我想知道"：按钮跳到对应工具', async () => {
   await page.close();
 });
 
+await t('全局查找：/ 打开，输入后回车打开公式卡片', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#y25', { waitUntil: 'domcontentloaded' });
+  await page.locator('body').click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press('/');
+  await page.waitForTimeout(80);
+  assert.ok(await page.locator('.finder').isVisible());
+  await page.keyboard.type('2035 负债率');
+  await page.waitForTimeout(80);
+  assert.ok((await page.locator('.finder-item').count()) >= 1);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+  assert.equal(await page.locator('.finder').isVisible(), false);
+  assert.equal(await page.locator('.drawer.open').count(), 1);
+  assert.match(await page.locator('.drawer').innerText(), /2035年政府负债率/);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+k');
+  await page.waitForTimeout(80);
+  assert.ok(await page.locator('.finder').isVisible(), 'Ctrl+K 也能打开');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.finder').isVisible(), false);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

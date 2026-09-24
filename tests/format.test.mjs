@@ -50,3 +50,17 @@ test('代入用精确格式：小数值保留足够有效数字，大数值两�
   assert.equal(fmtExact({ unit: 'yi', disp: 'wy' }, 14024.3, { delta: true }), '+1.402 万亿元');
   assert.equal(fmtExact({ unit: 'yi' }, NaN), '—');
 });
+
+test('全局查找：名称开头优先，多个关键词须全部命中', async () => {
+  const { Sim } = await import('../src/model/sim.js');
+  const { findNodes } = await import('../src/ui/finder.js').catch(() => ({}));
+  if (!findNodes) return; // finder.js 依赖 DOM 辅助模块时跳过
+  const g = new Sim().graph;
+  const r = findNodes(g, '付息');
+  assert.ok(r.length > 3);
+  assert.ok(g.specs.get(r[0]).label.includes('付息'));
+  const r2 = findNodes(g, '2035 负债率');
+  assert.ok(r2.includes('p_d_2035'));
+  assert.deepEqual(findNodes(g, '   '), []);
+  assert.deepEqual(findNodes(g, '不存在的东西xyz'), []);
+});

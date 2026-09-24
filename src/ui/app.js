@@ -11,6 +11,7 @@ import { deltaParts } from './common.js';
 import { VIEWS } from './views/index.js';
 import { createTracker } from './views/play.js';
 import { createNarrator } from './narrator.js';
+import { createFinder } from './finder.js';
 
 const KPIS = [
   { id: 'drate26', label: '2026 赤字率', ref: 0.03, refText: '3%：传统警戒参考', max: 0.08 },
@@ -128,6 +129,7 @@ export function createApp(root) {
       h('p', {}, '把四张财政图接成一台机器：拧任何一个旋钮，都能看到它沿公式传到哪里'),
       h('span', { class: 'spacer' }),
       h('div', { class: 'actions' },
+        h('button', { class: 'btn ghost', onclick: () => finder.open(), title: '查找任何数字（/ 或 Ctrl+K）', 'aria-label': '查找数字' }, '⌕ 查找'),
         undoBtn,
         redoBtn,
         h('button', { class: 'btn', onclick: () => app.resetAll(), title: '所有参数和规则恢复原图' }, '全部复原'),
@@ -348,12 +350,18 @@ export function createApp(root) {
       h('li', {}, h('kbd', {}, '←'), ' ', h('kbd', {}, '→'), '（焦点在标签栏时）切换页面'),
       h('li', {}, h('kbd', {}, 'Ctrl'), '+', h('kbd', {}, 'Z'), ' 撤销；', h('kbd', {}, 'Ctrl'), '+', h('kbd', {}, 'Shift'), '+', h('kbd', {}, 'Z'), ' 重做'),
       h('li', {}, h('kbd', {}, 'Enter'), ' 在数字上打开公式卡片；', h('kbd', {}, 'Esc'), ' 关闭卡片'),
+      h('li', {}, h('kbd', {}, '/'), ' 或 ', h('kbd', {}, 'Ctrl'), '+', h('kbd', {}, 'K'), ' 查找任何一个数字'),
       h('li', {}, h('kbd', {}, '?'), ' 显示/隐藏本帮助'),
     ),
   );
   root.append(help);
+  const finder = createFinder(app);
+  root.append(...finder.el);
+  app.finder = finder;
   document.addEventListener('keydown', (e) => {
-    if (e.key === '?' && !e.target.matches?.('input, textarea, select')) { help.hidden = !help.hidden; return; }
+    const typing = e.target.matches?.('input, textarea, select');
+    if (e.key === '?' && !typing) { help.hidden = !help.hidden; return; }
+    if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); finder.open(); return; }
     if (e.key === 'Escape' && !help.hidden) { help.hidden = true; return; }
     if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return;
     if (e.target.matches?.('input[type=text], input[type=search], textarea')) return;

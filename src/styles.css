@@ -707,3 +707,5 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
   .tor-row { grid-template-columns: minmax(0, 1fr) 84px; gap: 4px 8px; }
   .tor-l { grid-column: 1 / -1; text-align: left; }
 }
+.card-title:focus { outline: none; }
+.card-title:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }

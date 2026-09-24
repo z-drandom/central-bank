@@ -22,13 +22,17 @@ export function createCard(app) {
   let history = [];
   let slider = null;
 
+  let returnFocus = null;
   function open(id, { push = true } = {}) {
     if (!app.sim.has(id)) return;
+    if (!current) returnFocus = document.activeElement;
     if (push && current && current !== id) history.push(current);
     current = id;
     render();
     drawer.classList.add('open');
     scrim.classList.add('open');
+    // 键盘用户：焦点移到卡片标题
+    requestAnimationFrame(() => body.querySelector('.card-title')?.focus({ preventScroll: true }));
   }
   function goBack() {
     const id = history.pop();
@@ -40,6 +44,8 @@ export function createCard(app) {
     current = null;
     history = [];
     app.highlight?.(null);
+    if (returnFocus && document.contains(returnFocus)) returnFocus.focus({ preventScroll: true });
+    returnFocus = null;
   }
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && current) close();
@@ -68,7 +74,7 @@ export function createCard(app) {
     const isCh = changed(v, b);
     body.append(
       h('div', {},
-        h('h2', { class: 'card-title', html: `${esc(s.label)} <span style="font-size:0.8em">${symHTML(s.sym)}</span>` }),
+        h('h2', { class: 'card-title', tabindex: '-1', html: `${esc(s.label)} <span style="font-size:0.8em">${symHTML(s.sym)}</span>` }),
         h('div', { class: 'tags' },
           h('span', { class: 'tag' }, `${mod.img ? `图${mod.img} ` : ''}${mod.name}`),
           h('span', { class: `tag k-${k.key}` }, k.text),

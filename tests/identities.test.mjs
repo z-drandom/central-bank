@@ -94,6 +94,8 @@ test('切换平衡规则不改变任何当前数值（只改变之后由谁吸�
       sim.setMode(key, val);
       for (const id of Object.keys(before)) {
         if (!sim.has(id)) continue;
+        // 离开"等比例"规则时，增速参数会被有意改写为实际增速（见 rebaseOnModeChange），其余数字必须不变
+        if (/^g_(def|sci|sec|edu|grain|dip)$|^pl_|^oth_pl$|^kprop$/.test(id)) continue;
         close(sim.values[id], before[id], `seed ${seed} ${key}=${val} ${id}`);
       }
     }

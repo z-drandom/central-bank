@@ -5,13 +5,13 @@ import { ledgerHTML } from '../common.js';
 import { OWN26_IDS } from '../../model/specs.js';
 
 const CAT = {
-  def26: { name: '国防支出', g: 'g_def' },
+  def26: { name: '国防支出', g: 'gr_def26' },
   int26: { name: '债务付息支出', g: 'gr_int26' },
-  sci26: { name: '科学技术支出', g: 'g_sci' },
-  sec26: { name: '公共安全支出', g: 'g_sec' },
-  edu26: { name: '教育支出', g: 'g_edu' },
-  grain26: { name: '粮油物资储备支出', g: 'g_grain' },
-  dip26: { name: '外交支出', g: 'g_dip' },
+  sci26: { name: '科学技术支出', g: 'gr_sci26' },
+  sec26: { name: '公共安全支出', g: 'gr_sec26' },
+  edu26: { name: '教育支出', g: 'gr_edu26' },
+  grain26: { name: '粮油物资储备支出', g: 'gr_grain26' },
+  dip26: { name: '外交支出', g: 'gr_dip26' },
   oth26: { name: '其它', g: null },
 };
 
@@ -124,7 +124,7 @@ export default function budget26(app) {
         { title: '宏观与收入', ids: ['g_nom', 'eps', 'g_rc', 'g_rl', 'gdp25'], open: true },
         { title: '赤字', ids: ['dr26', 'dl26', 'dc26', 'd26'], open: true },
         { title: '调入资金', ids: ['tstab26', 'tsoe26', 'tl26'] },
-        { title: '中央本级支出（增速）', ids: ['g_def', 'g_sci', 'g_sec', 'g_edu', 'g_grain', 'g_dip', 'oth26', 'rcg'] },
+        { title: '中央本级支出（增速）', ids: ['g_def', 'g_sci', 'g_sec', 'g_edu', 'g_grain', 'g_dip', 'oth26', 'oth_pl', 'kprop', 'rcg'], note: '选"本级各项等比例"时，这里的增速是<b>计划</b>增速，实际数 = 计划数 × 分摊系数。' },
         { title: '转移支付、预备费与地方支出', ids: ['g_tr', 'tr26', 'res26', 'g_el', 'el26'] },
       ],
     },

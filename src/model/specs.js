@@ -35,6 +35,7 @@ export const MODE_OPTIONS = {
     options: {
       other: { label: '本级"其它"支出', desc: '中央支出增减由中央本级"其它"支出承担（挤出效应最直观）' },
       transfer: { label: '对地方转移支付', desc: '中央支出增减由转移支付承担，进而传到地方支出' },
+      prop: { label: '本级各项等比例', desc: '中央本级支出总额的增减，按各项（付息除外）的计划数等比例分摊' },
     },
   },
   l26: {
@@ -104,7 +105,21 @@ export const CARRY = {
   f2_ratio: (v) => v.f2_exp / v.f2_rev,
   f2_plan: (v) => v.f2_exp,
   f4_target: (v) => v.f4_bal,
+  oth_pl: (v) => v.oth26,
 };
+
+/**
+ * 规则切换的附加处理：离开"本级各项等比例"时，各项实际数 = 计划数 × 系数，
+ * 需要把增速参数改写成"实际数对应的增速"，否则切换瞬间各项会跳回计划数。
+ */
+export function rebaseOnModeChange(prevModes, newModes, prev, inputs) {
+  const wasProp = prevModes.c26 === 'rate' && prevModes.absorb === 'prop';
+  const isProp = newModes.c26 === 'rate' && newModes.absorb === 'prop';
+  if (wasProp && !isProp) {
+    for (const x of ['sci', 'sec', 'edu', 'grain', 'dip']) if (`g_${x}` in inputs) inputs[`g_${x}`] = prev[`${x}26`] / prev[`b_${x}25`] - 1;
+    if ('g_def' in inputs) inputs.g_def = prev.def26 / prev.e_def - 1;
+  }
+}
 
 export const PROJ_START = 2026;
 export const PROJ_END = 2035;
@@ -181,7 +196,9 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     f('rev25', 'R_{25}', '2025年一般公共预算收入', 'taxnet25 + nontax', { src, note: '一般公共预算收入 = 税收（扣退税）+ 非税收入。' });
 
     for (const e of EXP_2025) {
-      inp(`e_${e.id}`, `E_{${e.id}}`, e.name, e.v, { src, group: 'exp', short: e.short, range: [0, Math.round(e.v * 2), 1] });
+      // 国防支出同时是 2026 年国防的基数，不能取 0（增速无定义）
+      const lo = e.id === 'def' ? Math.round(e.v * 0.2) : 0;
+      inp(`e_${e.id}`, `E_{${e.id}}`, e.name, e.v, { src, group: 'exp', short: e.short, range: [lo, Math.round(e.v * 2), 1] });
     }
     f('exp25', 'E_{25}', '2025年一般公共预算支出', `sum(${EXP_2025.map((e) => `e_${e.id}`).join(', ')})`, {
       src, note: '图③中的支出合计包含"补充中央预算稳定调节基金"1,003.24 亿——这笔钱没有花掉，而是存进了稳定调节基金。',
@@ -253,19 +270,30 @@ export function buildSpecs(modes = DEFAULT_MODES) {
 
     // 本级支出分项
     const own = OWN_2026.filter((x) => x.g != null && x.id !== 'int' && x.id !== 'def');
+    const prop = M.c26 === 'rate' && M.absorb === 'prop';
     for (const x of own) {
       inp(`b_${x.id}25`, `E^{25}_{${x.id}}`, `2025年中央${x.name.replace('支出', '')}支出（反推）`, x.v / (1 + x.g), {
         fixed: true, src: `由图② ${x.v.toLocaleString('en-US')} ▲${(x.g * 100).toFixed(1)}% 反推`,
       });
       inp(`g_${x.id}`, `g_{${x.id}}`, `${x.name.replace('支出', '')}支出增速`, x.g, { unit: 'pct', range: pctRange(-0.3, 0.4), src, group: 'own' });
-      f(`${x.id}26`, `E_{${x.id}}`, x.name, `b_${x.id}25 * (1 + g_${x.id})`, { src, group: 'own' });
+      if (prop) {
+        f(`pl_${x.id}26`, `E^{plan}_{${x.id}}`, `${x.name}（计划数）`, `b_${x.id}25 * (1 + g_${x.id})`, { src, group: 'own' });
+        f(`${x.id}26`, `E_{${x.id}}`, x.name, `pl_${x.id}26 * kprop`, { src, group: 'own', note: '等比例分摊：实际数 = 计划数 × 分摊系数。' });
+      } else {
+        f(`${x.id}26`, `E_{${x.id}}`, x.name, `b_${x.id}25 * (1 + g_${x.id})`, { src, group: 'own' });
+      }
     }
     const defX = OWN_2026.find((x) => x.id === 'def');
     inp('g_def', 'g_{def}', '国防支出增速', defX.v / EXP_2025.find((e) => e.id === 'def').v - 1, {
       unit: 'pct', range: pctRange(-0.3, 0.4), src: '图② ▲7%（以图③ 2025 国防支出为基数）', group: 'own',
       note: '国防支出全部是中央本级支出，所以图③的全国国防支出 17,846.65 就是 2025 年中央国防支出：17,846.65 × 1.07 ≈ 19,095.61。',
     });
-    f('def26', 'E_{def}', '国防支出', 'e_def * (1 + g_def)', { src, group: 'own' });
+    if (prop) {
+      f('pl_def26', 'E^{plan}_{def}', '国防支出（计划数）', 'e_def * (1 + g_def)', { src, group: 'own' });
+      f('def26', 'E_{def}', '国防支出', 'pl_def26 * kprop', { src, group: 'own', note: '等比例分摊：实际数 = 计划数 × 分摊系数。' });
+    } else {
+      f('def26', 'E_{def}', '国防支出', 'e_def * (1 + g_def)', { src, group: 'own' });
+    }
     f('int26', 'E_{int}', '债务付息支出', 'rcg * bc0', {
       kind: 'calib', src, group: 'own',
       note: '中央付息 = 国债平均付息率 × 年初国债余额（图①）。国债余额增加或利率上升，付息就增加。',
@@ -286,6 +314,7 @@ export function buildSpecs(modes = DEFAULT_MODES) {
 
     const ownIds = ['def26', 'int26', 'sci26', 'sec26', 'edu26', 'grain26', 'dip26'];
     const absorbOther = M.c26 === 'rate' && M.absorb === 'other';
+    const absorbProp = M.c26 === 'rate' && M.absorb === 'prop';
     const absorbTr = M.c26 === 'rate' && M.absorb === 'transfer';
 
     // 赤字
@@ -295,7 +324,14 @@ export function buildSpecs(modes = DEFAULT_MODES) {
       f('dc26', 'D_{c}', '中央财政赤字', 'd26 - dl26', { src, note: '中央赤字 = 全国赤字 − 地方赤字。' });
     }
     // 其它支出、转移支付
-    if (absorbOther) {
+    if (prop) {
+      inp('oth_pl', 'E^{plan}_{oth}', '中央本级其它支出（计划数）', OWN_2026.find((x) => x.id === 'oth').v, { src, group: 'own', range: [0, 30000, 10] });
+      f('oth26', 'E_{oth}', '中央本级其它支出', 'oth_pl * kprop', { src, group: 'own', note: '等比例分摊：实际数 = 计划数 × 分摊系数。' });
+      const plans = ['pl_def26', 'pl_sci26', 'pl_sec26', 'pl_edu26', 'pl_grain26', 'pl_dip26', 'oth_pl'];
+      f('kprop', 'k', '本级支出分摊系数', `(own26 - int26) / (${plans.join(' + ')})`, {
+        unit: 'num', note: '可分配的本级支出（扣除刚性的付息）÷ 各项计划数之和。等于 1 表示各项都按计划安排；小于 1 表示同比例压减。',
+      });
+    } else if (absorbOther) {
       f('oth26', 'E_{oth}', '中央本级其它支出', `own26 - (${ownIds.join(' + ')})`, {
         src, group: 'own', note: '吸收项：中央本级支出总额定下来后，列明各项之外剩下的就是"其它"。其它变负说明赤字率锚定下无法容纳这些支出。',
       });
@@ -310,7 +346,7 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     }
     if (M.c26 === 'rate') {
       f('ec26', 'E_{c}', '中央一般公共预算支出', 'rc26 + dc26 + tstab26 + tsoe26', { src, note: '中央支出 = 中央收入 + 中央赤字 + 从稳定调节基金调入 + 从国有资本经营预算调入。' });
-      if (absorbOther) f('own26', 'E_{own}', '中央本级支出', 'ec26 - tr26 - res26', { src, note: '中央本级支出 = 中央支出 − 转移支付 − 预备费。' });
+      if (absorbOther || absorbProp) f('own26', 'E_{own}', '中央本级支出', 'ec26 - tr26 - res26', { src, note: '中央本级支出 = 中央支出 − 转移支付 − 预备费。' });
       else f('own26', 'E_{own}', '中央本级支出', `sum(${[...ownIds, 'oth26'].join(', ')})`, { src });
     } else {
       f('own26', 'E_{own}', '中央本级支出', `sum(${[...ownIds, 'oth26'].join(', ')})`, { src });
@@ -352,6 +388,8 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     f('gr_el26', 'Δ_{El}', '地方支出增速', 'el26 / b_el25 - 1', { ...pct1, src: '图② ▲4%' });
     f('gr_dc26', 'Δ_{Dc}', '中央赤字增速', 'dc26 / dc25 - 1', { ...pct1, src: '图② ▲4.7%' });
     f('gr_int26', 'Δ_{int}', '付息支出增速', 'int26 / b_int25 - 1', { ...pct1, src: '图② ▲6.7%' });
+    f('gr_def26', 'Δ_{def}', '国防支出实际增速', 'def26 / e_def - 1', { ...pct1, src: '图② ▲7%' });
+    for (const x of own) f(`gr_${x.id}26`, `Δ_{${x.id}}`, `${x.name.replace('支出', '')}支出实际增速`, `${x.id}26 / b_${x.id}25 - 1`, { ...pct1, src: `图② ▲${(x.g * 100).toFixed(1)}%` });
     // 指标
     f('self26', 'σ', '地方财政自给率', 'rl26 / el26', { unit: 'pct', note: '地方自己的收入能覆盖多少支出；其余靠转移支付、借债和调入。' });
     f('trdep26', 'τ_{TR}', '转移支付占地方支出比重', 'tr26 / el26', { unit: 'pct' });

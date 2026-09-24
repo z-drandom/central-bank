@@ -1,6 +1,6 @@
 // 模拟器状态：平衡规则 + 输入参数 → 当前值；并维护同一规则下的基线值用于对比。
 import { Graph, diff, changed } from '../engine/graph.js';
-import { buildSpecs, DEFAULT_MODES, CARRY } from './specs.js';
+import { buildSpecs, DEFAULT_MODES, CARRY, rebaseOnModeChange } from './specs.js';
 
 export class Sim {
   constructor(modes = {}) {
@@ -52,6 +52,7 @@ export class Sim {
   setMode(key, val) {
     if (this.modes[key] === val) return this.values;
     const prev = this.values;
+    const prevModes = this.modes;
     this.modes = { ...this.modes, [key]: val };
     const g = new Graph(buildSpecs(this.modes));
     const inputs = {};
@@ -61,6 +62,7 @@ export class Sim {
       else if (CARRY[n.id]) inputs[n.id] = CARRY[n.id](prev);
       else inputs[n.id] = n.base;
     }
+    rebaseOnModeChange(prevModes, this.modes, prev, inputs);
     this.graph = g;
     this.inputs = inputs;
     this._refreshBase();

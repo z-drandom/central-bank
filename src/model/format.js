@@ -176,3 +176,15 @@ export function kindOf(spec) {
   }
   return { key: spec.kind, text: KIND_TEXT[spec.kind] ?? '公式' };
 }
+
+// 公式的"符号行"与数值无关，按依赖图缓存（传导链列表每帧要用很多次）
+const symCache = new WeakMap();
+export function symLineText(graph, id) {
+  let m = symCache.get(graph);
+  if (!m) symCache.set(graph, (m = new Map()));
+  if (!m.has(id)) {
+    const spec = graph.specs.get(id);
+    m.set(id, spec.expr == null ? null : `${symText(spec.sym)} = ${render(spec.ast, { leaf: (x) => symText(graph.specs.get(x).sym), wrap: (q) => `(${q})`, sup: (q) => `^${q}` })}`);
+  }
+  return m.get(id);
+}

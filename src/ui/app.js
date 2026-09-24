@@ -248,6 +248,19 @@ export function createApp(root) {
     update();
   }
 
+  // 次要面板（传导链、公式手册）用尾随节流：拖动滑杆时最多每 140ms 刷新一次
+  const slowTimers = new Map();
+  function slowLater(fn, key = 'view') {
+    if (slowTimers.has(key)) { slowTimers.get(key).fn = fn; return; }
+    const entry = { fn };
+    slowTimers.set(key, entry);
+    const last = entry.last ?? 0;
+    const wait = Math.max(0, 140 - (performance.now() - last));
+    setTimeout(() => { slowTimers.delete(key); entry.fn(); }, first ? 0 : wait);
+  }
+  let first = true;
+  requestAnimationFrame(() => { first = false; });
+
   function schedule() {
     if (scheduled) return;
     scheduled = true;
@@ -278,8 +291,9 @@ export function createApp(root) {
     redoBtn.disabled = !hist.future.length;
     const t = tabs.get(current);
     t?.panel?.update();
-    t?.view.update();
-    changes.update();
+    if (t?.view.slow) slowLater(() => t.view.update());
+    else t?.view.update();
+    slowLater(() => changes.update(), 'changes');
     card.update();
     tracker.update();
     narrator.update();
@@ -287,8 +301,7 @@ export function createApp(root) {
     hlId = null;
     app.highlight(card.current ?? (hl ? hl.split('|') : null));
     for (const fn of listeners) fn();
-    // 顶栏高度供参数面板吸顶
-    document.documentElement.style.setProperty('--top-h', `${top.getBoundingClientRect().height}px`);
+
   }
 
   let toastTimer;
@@ -304,6 +317,10 @@ export function createApp(root) {
     if (tabs.has(id) && id !== current) go(id);
   });
   window.addEventListener('resize', () => schedule());
+  // 顶栏高度供参数面板吸顶（只在尺寸变化时读取，避免每帧强制重排）
+  const setTopH = () => document.documentElement.style.setProperty('--top-h', `${top.offsetHeight}px`);
+  if ('ResizeObserver' in window) new ResizeObserver(setTopH).observe(top);
+  else setTopH();
   document.addEventListener('keydown', (e) => {
     if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return;
     if (e.target.matches?.('input[type=text], input[type=search], textarea')) return;

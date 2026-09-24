@@ -26,6 +26,7 @@ export default function handbook(app) {
     tabs.append(h('button', { type: 'button', 'data-k': k, onclick: () => { mode = k; update(); } }, t));
   }
   search.addEventListener('input', () => renderList());
+  // 读法一行含上游名称，与数值无关；代入值在卡片里看
 
   function renderFilters() {
     filters.innerHTML = '';
@@ -52,7 +53,7 @@ export default function handbook(app) {
           h('b', {}, s.label),
           h('span', { class: 'tag' }, MODULES[s.mod].short),
           h('span', { class: `tag k-${k.key}` }, k.text),
-          h('span', { class: 'num', style: { marginLeft: 'auto', color: 'var(--ink-2)' } }, fmt(s, app.v[s.id])),
+          h('span', { class: 'num fx-val', 'data-v': s.id, style: { marginLeft: 'auto', color: 'var(--ink-2)' } }, fmt(s, app.v[s.id])),
         ),
         h('div', { class: 'l2', html: L.sym }),
         h('div', { class: 'hint', html: L.read }),
@@ -126,10 +127,15 @@ export default function handbook(app) {
     renderCross();
   });
 
+  let builtFor = null;
   function update() {
     for (const b of tabs.children) b.setAttribute('aria-pressed', String(b.dataset.k === mode));
     for (const [k, p] of Object.entries(panes)) p.hidden = k !== mode;
-    if (mode === 'fx') { renderFilters(); renderList(); }
+    if (mode === 'fx') {
+      // 公式文本与数值无关：同一张依赖图只建一次列表，之后只刷新数值
+      if (builtFor !== app.sim.graph) { renderFilters(); renderList(); builtFor = app.sim.graph; }
+      else for (const el of list.querySelectorAll('[data-v]')) el.textContent = fmt(app.sim.spec(el.dataset.v), app.v[el.dataset.v]);
+    }
     if (mode === 'assume') renderAssume();
     if (mode === 'rec') renderRec();
     if (mode === 'cross') renderCross();
@@ -144,5 +150,6 @@ export default function handbook(app) {
     el,
     update,
     hideChanges: true,
+    slow: true,
   };
 }

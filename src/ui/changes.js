@@ -1,6 +1,6 @@
 // 传导链：列出所有相对基线发生变化的数字（按依赖顺序），并可切换为"传导路径图"。
 import { h, esc } from './dom.js';
-import { fmt, fmtDelta, formulaLines } from '../model/format.js';
+import { fmt, fmtDelta, symLineText } from '../model/format.js';
 import { MODULES } from '../model/specs.js';
 import { activeWarnings } from './warnings.js';
 import { deltaParts } from './common.js';
@@ -80,11 +80,7 @@ export function createChanges(app) {
     for (const id of ids) {
       const s = sim.spec(id);
       const dp = deltaParts(app, id);
-      let fx = '';
-      if (s.expr != null) {
-        const L = formulaLines(sim.graph, id, app.v, { html: false });
-        fx = L.sym;
-      } else fx = inputs.has(id) ? '你调整的参数' : '参数';
+      const fx = s.expr != null ? symLineText(sim.graph, id) : inputs.has(id) ? '你调整的参数' : '参数';
       box.append(h('div', { class: `chg ${s.expr == null ? 'input' : ''}`, role: 'listitem', onclick: () => app.openCard(id), onmouseenter: () => app.highlight(id), onmouseleave: () => app.highlight(null) },
         h('span', { class: 'mod' }, s.expr == null ? '输入' : MODULES[s.mod].short),
         h('div', {}, h('div', { class: 'nm' }, s.label), h('div', { class: 'fx' }, fx)),

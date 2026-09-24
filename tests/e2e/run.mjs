@@ -471,6 +471,26 @@ await t('双目标求解：示例求出两个参数，应用后两个目标同�
   await page.close();
 });
 
+await t('影响矩阵：点格子显示路径分解，链式法则与直接重算一致', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#sens', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(300);
+  await page.locator('td[data-pair="t_vat|r26"]').click();
+  await page.waitForTimeout(150);
+  const txt = await page.locator('.paths').innerText();
+  assert.match(txt, /共有 3 条公式路径/);
+  assert.match(txt, /= \+7,040\.44 亿元；直接重算 = \+7,040\.44 亿元/);
+  assert.equal(await page.locator('.drawer.open').count(), 0, '点格子不应打开公式卡片');
+  await page.locator('td[data-pair="g_nom|debt_gdp1"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(150);
+  assert.match(await page.locator('.paths h4').innerText(), /2026年名义GDP增速 → /);
+  await page.locator('.paths button[aria-label="关闭路径分解"]').click();
+  assert.equal(await page.locator('.paths').isVisible(), false);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

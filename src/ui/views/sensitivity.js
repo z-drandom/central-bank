@@ -8,6 +8,7 @@ import { influenceMatrix, MATRIX_COLS } from '../../model/matrix.js';
 import { toDisp, fromDisp } from '../controls.js';
 import { createPhase } from '../phase.js';
 import { createSolve2 } from '../solve2.js';
+import { createPaths } from '../paths.js';
 
 export default function sensitivity(app) {
   let target = 'p_d_2035';
@@ -72,9 +73,21 @@ export default function sensitivity(app) {
     h('p', { class: 'hint' }, '参数列表按对目标的影响大小排序，只列上游参数。求解在参数滑杆的允许区间内进行；达不到时会告诉你目标的可达范围。'),
   );
   const mat = h('div', { class: 'tbl-wrap' });
+  const paths = createPaths(app);
+  mat.addEventListener('click', (e) => {
+    const td = e.target.closest('td[data-pair]');
+    if (!td) return;
+    const [a, b] = td.dataset.pair.split('|');
+    paths.show(a, b);
+  });
+  mat.addEventListener('keydown', (e) => {
+    const td = e.target.closest?.('td[data-pair]');
+    if (td && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const [a, b] = td.dataset.pair.split('|'); paths.show(a, b); }
+  });
   const matSheet = h('div', { class: 'sheet', id: 'matrix' },
-    h('h3', {}, '影响矩阵：谁影响谁', h('small', {}, '每一行把一个旋钮拨动一步（比率 +1 个百分点，金额 +10%），每一格是结果的变化。“·”表示两者之间没有任何公式路径；“0”表示有路径但效果正好抵消。颜色越深影响越大（按列比较）')),
+    h('h3', {}, '影响矩阵：谁影响谁', h('small', {}, '每一行把一个旋钮拨动一步（比率 +1 个百分点，金额 +10%），每一格是结果的变化。“·”表示两者之间没有任何公式路径；“0”表示有路径但效果正好抵消。颜色越深影响越大（按列比较）。点任一格，看这个影响是沿哪几条公式路径传过去的')),
     mat,
+    paths.el,
   );
   function renderMatrix() {
     const g = app.sim.graph;
@@ -99,7 +112,7 @@ export default function sensitivity(app) {
           const t = Math.min(1, Math.abs(d) / colMax[j]);
           const small = Math.abs(d) < 1e-9 * Math.max(1, Math.abs(app.v[MATRIX_COLS[j][0]]));
           const bg = small ? 'transparent' : `color-mix(in srgb, var(${d > 0 ? '--up' : '--down'}) ${Math.round(8 + t * 45)}%, var(--surface))`;
-          return `<td class="n" data-node="${MATRIX_COLS[j][0]}" style="cursor:pointer;background:${bg}">${small ? '0' : esc(short(cspec, d))}</td>`;
+          return `<td class="n" data-pair="${r.id}|${MATRIX_COLS[j][0]}" tabindex="0" role="button" aria-label="${esc(sp.label)}对${esc(cspec.label)}的传导路径" style="cursor:pointer;background:${bg}">${small ? '0' : esc(short(cspec, d))}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table>`;
   }
@@ -138,6 +151,7 @@ export default function sensitivity(app) {
   function update() {
     if (!gsInit) { fillParams(); gsInit = true; }
     renderMatrix();
+    paths.update();
     phase.update();
     solve2.update();
     for (const b of modeSeg.children) b.setAttribute('aria-pressed', String(b.dataset.m === mode));

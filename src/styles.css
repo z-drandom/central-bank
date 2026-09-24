@@ -784,3 +784,15 @@ kbd { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--rule-
 .toc .hint { margin-left: 4px; }
 .toc a.chip { text-decoration: none; }
 .sheet[id] { scroll-margin-top: calc(var(--top-h, 120px) + 12px); }
+
+/* 路径分解 */
+.paths { margin-top: 12px; border: 1px solid var(--rule-strong); border-radius: var(--r); padding: 10px 12px; background: var(--surface); }
+.paths-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.paths-head h4 { margin: 0; font: 600 14px var(--f-body); }
+.path-list { display: grid; gap: 6px; }
+.path-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; border-bottom: 1px dashed var(--rule); padding: 4px 0; }
+.path-row .crumbs { flex: 1 1 auto; }
+.path-node { display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.25; }
+.path-node small { font-size: 11px; }
+.path-sum { white-space: nowrap; font-size: 13px; }
+td[data-pair]:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }

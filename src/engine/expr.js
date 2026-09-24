@@ -106,7 +106,8 @@ export function evaluate(ast, get) {
     case 'num': return ast.v;
     case 'var': {
       const v = get(ast.id);
-      if (v === undefined || Number.isNaN(v)) throw new Error(`变量 ${ast.id} 无值`);
+      // 未定义说明依赖图出错，必须报错；NaN/Infinity 属于数值越界，让它传播，由界面显示为"—"
+      if (v === undefined) throw new Error(`变量 ${ast.id} 无值`);
       return v;
     }
     case 'neg': return -evaluate(ast.a, get);

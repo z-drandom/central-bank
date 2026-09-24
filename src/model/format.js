@@ -22,7 +22,7 @@ export function unitText(kind) {
 
 /** 普通展示（卡片、图表标签） */
 export function fmt(spec, v, { unit = true, dp, scale } = {}) {
-  if (v == null || Number.isNaN(v)) return '—';
+  if (v == null || !Number.isFinite(v)) return '—';
   let k = dispKind(spec);
   if (scale && (k === 'yi' || k === 'wanyi')) k = scale;
   let s;
@@ -39,7 +39,7 @@ export function fmt(spec, v, { unit = true, dp, scale } = {}) {
 
 /** 变化量展示：带正负号 */
 export function fmtDelta(spec, d, { unit = true } = {}) {
-  if (d == null || Number.isNaN(d)) return '—';
+  if (d == null || !Number.isFinite(d)) return '—';
   const k = dispKind(spec);
   let s;
   const a = Math.abs(d);
@@ -56,7 +56,7 @@ export function fmtDelta(spec, d, { unit = true } = {}) {
 
 /** 相对变化 */
 export function fmtRel(base, now) {
-  if (Math.abs(base) < 1e-12) return '';
+  if (Math.abs(base) < 1e-12 || !Number.isFinite(now / base)) return '';
   const r = now / base - 1;
   return (r >= 0 ? '+' : MINUS) + (Math.abs(r) * 100).toFixed(1) + '%';
 }

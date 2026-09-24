@@ -290,7 +290,7 @@ export function buildSpecs(modes = DEFAULT_MODES) {
 
     // 赤字
     if (M.c26 === 'rate' || M.c26 === 'stab') {
-      inp('dr26', 'd^{*}', '目标赤字率', B2026.defRate, { unit: 'pct', src: '图② 赤字率≈4%', range: pctRange(0, 0.1, 0.0005) });
+      inp('dr26', 'd^{*}', '目标赤字率', B2026.defRate, { unit: 'pct', src: '图② 赤字率≈4%', range: pctRange(0.005, 0.1, 0.0005) });
       f('d26', 'D', '全国财政赤字', 'dr26 * gdp26', { src, note: '赤字率锚定：赤字 = 目标赤字率 × 名义 GDP。' });
       f('dc26', 'D_{c}', '中央财政赤字', 'd26 - dl26', { src, note: '中央赤字 = 全国赤字 − 地方赤字。' });
     }
@@ -550,7 +550,6 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     });
     f('prc', 'm_{c}', '推演期国债市场利率', 'rcg + pshift', { unit: 'pct', note: '新发国债的利率 = 2026 年平均付息率 + 利率变动。' });
     f('prl', 'm_{l}', '推演期地方债市场利率', 'rl + pshift', { unit: 'pct' });
-    f('pdl', 'λ', '地方赤字占全国赤字比重', 'dl26 / d26', { unit: 'pct', note: '沿用 2026 年的中央/地方赤字结构。' });
 
     const y0 = PROJ_START;
     // 起点：2026 年 = 预算模块结果
@@ -600,8 +599,9 @@ export function buildSpecs(modes = DEFAULT_MODES) {
         f(`p_D_${y}`, `D_{${y}}`, `${y}年赤字`, `p_E_${y} - p_R_${y} - p_T_${y}`, {});
       }
       f(`p_sw_${y}`, `S_{sw,${y}}`, `${y}年置换隐债`, `min(pswap, p_H_${p})`, W);
-      f(`p_Bc_${y}`, `B_{c,${y}}`, `${y}年末国债`, `p_Bc_${p} + p_D_${y} * (1 - pdl) + pstb`, W);
-      f(`p_Blg_${y}`, `B_{lg,${y}}`, `${y}年末地方一般债`, `p_Blg_${p} + p_D_${y} * pdl`, W);
+      f(`p_Dl_${y}`, `D_{l,${y}}`, `${y}年地方赤字`, `dl26 * p_Y_${y} / gdp26`, { kind: 'assume', note: '地方赤字（新增一般债限额）占 GDP 的比例保持 2026 年水平，其余赤字由中央承担。' });
+      f(`p_Bc_${y}`, `B_{c,${y}}`, `${y}年末国债`, `p_Bc_${p} + (p_D_${y} - p_Dl_${y}) + pstb`, { ...W, note: '国债 = 上年末 + 中央赤字（全国赤字 − 地方赤字）+ 特别国债。' });
+      f(`p_Blg_${y}`, `B_{lg,${y}}`, `${y}年末地方一般债`, `p_Blg_${p} + p_Dl_${y}`, W);
       f(`p_Bls_${y}`, `B_{ls,${y}}`, `${y}年末地方专项债`, `p_Bls_${p} + psp + p_sw_${y}`, W);
       f(`p_H_${y}`, `H_{${y}}`, `${y}年末隐性债务`, `p_H_${p} - p_sw_${y}`, W);
       f(`p_B_${y}`, `B_{${y}}`, `${y}年末政府债务`, `p_Bc_${y} + p_Blg_${y} + p_Bls_${y}`, W);

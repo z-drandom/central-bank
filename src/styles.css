@@ -778,3 +778,9 @@ kbd { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--rule-
 @media (max-width: 600px) { .s2-grid { grid-template-columns: auto minmax(0, 1fr); } }
 .s2-j { margin-top: 8px; }
 .s2-j th, .s2-j td { white-space: nowrap; }
+
+/* 页内目录 */
+.toc { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.toc .hint { margin-left: 4px; }
+.toc a.chip { text-decoration: none; }
+.sheet[id] { scroll-margin-top: calc(var(--top-h, 120px) + 12px); }

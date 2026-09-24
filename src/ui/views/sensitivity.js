@@ -62,7 +62,7 @@ export default function sensitivity(app) {
       h('button', { class: 'btn primary', onclick: () => { app.set(pid, r.x); app.flash(`已把${pspec.label}调到 ${fmt(pspec, r.x)}`); fillParams(); } }, '应用这个值'),
     );
   }
-  const gsSheet = h('div', { class: 'sheet' },
+  const gsSheet = h('div', { class: 'sheet', id: 'solve1' },
     h('h3', {}, '反向求解', h('small', {}, '想让某个指标达到目标，只调一个参数，需要调到多少？')),
     h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' } },
       h('span', {}, '让'), gsTarget, h('span', {}, '等于'), gsGoal, gsUnit, h('span', {}, '，只调'), gsParam,
@@ -72,7 +72,7 @@ export default function sensitivity(app) {
     h('p', { class: 'hint' }, '参数列表按对目标的影响大小排序，只列上游参数。求解在参数滑杆的允许区间内进行；达不到时会告诉你目标的可达范围。'),
   );
   const mat = h('div', { class: 'tbl-wrap' });
-  const matSheet = h('div', { class: 'sheet' },
+  const matSheet = h('div', { class: 'sheet', id: 'matrix' },
     h('h3', {}, '影响矩阵：谁影响谁', h('small', {}, '每一行把一个旋钮拨动一步（比率 +1 个百分点，金额 +10%），每一格是结果的变化。“·”表示两者之间没有任何公式路径；“0”表示有路径但效果正好抵消。颜色越深影响越大（按列比较）')),
     mat,
   );
@@ -106,13 +106,19 @@ export default function sensitivity(app) {
   const phase = createPhase(app);
   const solve2 = createSolve2(app);
   let top2 = [];
-  const top2Btn = h('button', { class: 'btn', type: 'button', id: 'sens-top2', onclick: () => { if (top2.length === 2) app.showPhaseCustom({ target, x: top2[0], y: top2[1] }); } }, '把前两名放进相图 ↑');
+  const top2Btn = h('button', { class: 'btn', type: 'button', id: 'sens-top2', onclick: () => { if (top2.length === 2) app.showPhaseCustom({ target, x: top2[0], y: top2[1] }); } }, '把前两名放进相图 ↓');
+  const toc = h('nav', { class: 'toc', 'aria-label': '本页工具' },
+    h('span', { class: 'hint' }, '一次动一个：'),
+    ...[['matrix', '影响矩阵'], ['tornado', '龙卷风图']].map(([id, t]) => h('a', { href: `#${id}`, class: 'chip', onclick: (e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ block: 'start' }); } }, t)),
+    h('span', { class: 'hint' }, '一次动两个：'),
+    ...[['phase', '双参数相图']].map(([id, t]) => h('a', { href: `#${id}`, class: 'chip', onclick: (e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ block: 'start' }); } }, t)),
+    h('span', { class: 'hint' }, '倒过来算：'),
+    ...[['solve1', '单目标求解'], ['solve2', '双目标求解']].map(([id, t]) => h('a', { href: `#${id}`, class: 'chip', onclick: (e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ block: 'start' }); } }, t)),
+  );
   const el = h('div', { style: { display: 'grid', gap: '16px' } },
+    toc,
     matSheet,
-    phase.el,
-    gsSheet,
-    solve2.el,
-    h('div', { class: 'sheet' },
+    h('div', { class: 'sheet', id: 'tornado' },
       h('h3', {}, '谁对这个指标影响最大', h('small', {}, '在当前参数和规则下，把每个参数单独上下拨动一步，其余不动')),
       h('div', { style: { display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' } }, h('b', {}, '目标：'), sel, modeSeg, top2Btn),
       info,
@@ -123,6 +129,9 @@ export default function sensitivity(app) {
       ),
       h('p', { class: 'hint' }, '只列出目标的上游参数——不在上游的参数无论怎么调都不会影响它。点击任一行打开该参数的卡片。换平衡规则后排序会变：规则决定了冲击沿哪条路传播。'),
     ),
+    phase.el,
+    gsSheet,
+    solve2.el,
   );
 
   let gsInit = false;
@@ -161,8 +170,8 @@ export default function sensitivity(app) {
   return {
     id: 'sens',
     title: '影响与敏感度',
-    heading: '影响矩阵、双参数相图与反向求解：谁影响谁、一起拧会怎样、要拧多少',
-    lead: '影响矩阵一次只动一个旋钮；相图同时动两个，看它们的效果能不能相加、此消彼长的比率是多少；反向求解告诉你要达到目标得拧到哪；龙卷风图把某个指标上游的所有参数按影响大小排队。每一个数都是重算整张依赖图得到的。',
+    heading: '影响与敏感度：谁影响谁、一起拧会怎样、要拧多少',
+    lead: '影响矩阵和龙卷风图一次只动一个旋钮；双参数相图同时动两个，看它们的效果能不能直接相加、此消彼长的比率是多少；单目标和双目标求解倒过来算：要达到目标得把旋钮拧到哪。每一个数都是重算整张依赖图得到的。',
     slow: true,
     mods: [],
     el,

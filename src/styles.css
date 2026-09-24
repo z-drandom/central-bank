@@ -684,3 +684,8 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .gloss-n { display: flex; flex-wrap: wrap; gap: 4px; }
 .rules-tbl td:first-child, .rules-tbl th:first-child { white-space: nowrap; }
 .rules-tbl th .chip { white-space: nowrap; }
+.event-card { margin-top: 12px; border: 2px solid var(--ink); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; background: var(--surface); }
+.event-card h4 { margin: 0; font: 700 18px var(--f-display); }
+.event-card p { margin: 0; }
+.fixes { display: grid; gap: 6px; }
+.fix { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 6px 8px; background: var(--surface-2); border-radius: 5px; font-size: 13.5px; }

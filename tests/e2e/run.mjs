@@ -317,6 +317,20 @@ await t('规则对比表：显示六种规则，点列头切换规则', async ()
   await page.close();
 });
 
+await t('事件卡：抽卡、用对冲方案后目标回到原图水平', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#play', { waitUntil: 'domcontentloaded' });
+  await page.locator('button', { hasText: '抽一张事件卡' }).click();
+  await page.waitForTimeout(150);
+  assert.ok((await page.locator('.event-card .fix').count()) >= 1);
+  await page.locator('.event-card .fix button').first().click();
+  await page.waitForTimeout(200);
+  const n = await page.evaluate(() => __fiscal.sim.changedInputs().length);
+  assert.ok(n >= 2, '应同时施加冲击和对冲');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await browser.close();
 console.log(`\n# pass ${passes}\n# fail ${failures}`);
 process.exit(failures ? 1 : 0);

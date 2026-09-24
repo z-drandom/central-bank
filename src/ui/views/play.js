@@ -3,6 +3,7 @@ import { h, esc, load, save } from '../dom.js';
 import { CHALLENGES, evalGoals } from '../../model/challenges.js';
 import { QUIZ, gradeQuestion } from '../../model/quiz.js';
 import { formulaLines, fmt, fmtDelta } from '../../model/format.js';
+import { EVENTS, playEvent } from '../../model/events.js';
 
 const STORE = 'fiscal-sandbox-progress-v1';
 
@@ -81,8 +82,47 @@ export default function play(app) {
   const grid = h('div', { class: 'play-grid' });
   const quizBox = h('div', { class: 'sheet', id: 'quiz' });
   const rank = h('div', { class: 'rank' });
+  const evBox = h('div');
+  let lastEv = null;
+  function drawEvent() {
+    let ev;
+    do { ev = EVENTS[Math.floor(Math.random() * EVENTS.length)]; } while (EVENTS.length > 1 && ev.id === lastEv);
+    lastEv = ev.id;
+    const r = playEvent(ev);
+    const ts = r.sim.spec(r.target);
+    const tab = { oth26: 'b26', drate26: 'b26', el26: 'b26', f1_other: 'fb', p_d_2035: 'proj' }[r.target] ?? 'overview';
+    const applyEvent = (fix) => {
+      app.sim.resetAll();
+      app.applyPreset({ label: `事件：${ev.title}`, modes: ev.modes, changes: ev.changes, go: tab });
+      if (fix) app.set(fix.id, fix.to);
+    };
+    evBox.innerHTML = '';
+    evBox.append(h('div', { class: 'event-card' },
+      h('div', { class: 'lvl' }, '事件卡'),
+      h('h4', {}, ev.title),
+      h('p', {}, ev.story),
+      h('p', { class: 'note', html: `冲击：<b>${esc(ts.label)}</b> 从 ${esc(fmt(ts, r.goal))} 变为 <b>${esc(fmt(ts, r.now))}</b>（${esc(fmtDelta(ts, r.now - r.goal))}）。要把它拉回原图水平，只动一个旋钮的话：` }),
+      h('div', { class: 'fixes' }, r.fixes.map((f) => {
+        const sp = r.sim.spec(f.id);
+        return h('div', { class: 'fix' },
+          h('span', { html: `把 <b>${esc(sp.label)}</b> 从 ${esc(fmt(sp, f.from))} 调到 <b>${esc(fmt(sp, f.to))}</b>` }),
+          h('button', { class: 'btn', onclick: () => applyEvent(f) }, '用这个方案'),
+        );
+      })),
+      h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' } },
+        h('button', { class: 'btn primary', onclick: () => applyEvent(null) }, '只施加冲击，我自己来'),
+        h('button', { class: 'btn ghost', onclick: drawEvent }, '换一张'),
+      ),
+      h('p', { class: 'hint' }, '每个方案都是用"反向求解"在同一套公式上算出来的；只列政策能动的旋钮。方案之间可以组合，每个只需动一部分。'),
+    ));
+  }
   const el = h('div', {},
     rank,
+    h('div', { class: 'sheet', style: { marginBottom: '16px' } },
+      h('h3', {}, '事件卡', h('small', {}, `${EVENTS.length} 张随机冲击：看它打到哪里，再看系统算出的对冲办法`)),
+      h('button', { class: 'btn primary', onclick: drawEvent }, '抽一张事件卡'),
+      evBox,
+    ),
     h('div', { class: 'sheet', style: { marginBottom: '16px' } },
       h('h3', {}, '挑战关卡', h('small', {}, '每关先给一个冲击，再由你调参数达成全部目标。任务卡会跟着你切换页面')),
       grid,

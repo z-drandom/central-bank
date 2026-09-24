@@ -294,7 +294,7 @@ await t('反向求解：求出参数值并可一键应用', async () => {
   await page.waitForTimeout(80);
   await page.selectOption('#gs-param', 'dr26');
   await page.fill('#gs-goal', '4.5');
-  await page.locator('button', { hasText: '求解' }).click();
+  await page.locator('#gs-solve').click();
   await page.waitForTimeout(80);
   await page.locator('button', { hasText: '应用这个值' }).click();
   await page.waitForTimeout(120);
@@ -440,6 +440,33 @@ await t('公式卡片：改两个参数后给出 Shapley 归因，合计等于�
   await page.evaluate(() => __fiscal.openCard('dr26'));
   await page.waitForTimeout(100);
   assert.equal(await page.locator('.shap').count(), 0, '输入参数的卡片不应有归因');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
+await t('双目标求解：示例求出两个参数，应用后两个目标同时达到', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#sens', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(300);
+  await page.locator('#solve2 .chip', { hasText: '地方多花 2,000 亿' }).click();
+  await page.waitForTimeout(200);
+  assert.match(await page.locator('#solve2').innerText(), /两个目标同时达到/);
+  const before = await page.evaluate(() => ({ el: __fiscal.v.el26, oth: __fiscal.v.oth26 }));
+  await page.locator('#solve2 button', { hasText: '同时应用这两个值' }).click();
+  await page.waitForTimeout(250);
+  const after = await page.evaluate(() => ({ el: __fiscal.v.el26, oth: __fiscal.v.oth26, dr: __fiscal.v.dr26, gdp: __fiscal.v.gdp26 }));
+  assert.ok(Math.abs(after.el - before.el - 2000) < 1e-4, `地方支出应 +2000：${after.el - before.el}`);
+  assert.ok(Math.abs(after.oth - before.oth) < 1e-4, '其它支出不变');
+  assert.ok(Math.abs(after.dr - (0.04 + 2000 / after.gdp)) < 1e-9);
+  // 奇异情形：两个分税比例对自给率和中央收入作用成比例
+  await page.selectOption('#s2-t0', 'self26');
+  await page.selectOption('#s2-t1', 'rc26');
+  await page.selectOption('#s2-p0', 's_vat');
+  await page.selectOption('#s2-p1', 's_cit');
+  await page.fill('#s2-g0', '55');
+  await page.locator('#solve2 button', { hasText: '求解' }).click();
+  await page.waitForTimeout(150);
+  assert.match(await page.locator('#solve2').innerText(), /方向相同/);
   assert.deepEqual(page.errors, []);
   await page.close();
 });

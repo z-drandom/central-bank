@@ -7,6 +7,7 @@ import { goalSeek } from '../../model/solve.js';
 import { influenceMatrix, MATRIX_COLS } from '../../model/matrix.js';
 import { toDisp, fromDisp } from '../controls.js';
 import { createPhase } from '../phase.js';
+import { createSolve2 } from '../solve2.js';
 
 export default function sensitivity(app) {
   let target = 'p_d_2035';
@@ -65,7 +66,7 @@ export default function sensitivity(app) {
     h('h3', {}, '反向求解', h('small', {}, '想让某个指标达到目标，只调一个参数，需要调到多少？')),
     h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' } },
       h('span', {}, '让'), gsTarget, h('span', {}, '等于'), gsGoal, gsUnit, h('span', {}, '，只调'), gsParam,
-      h('button', { class: 'btn primary', onclick: solve }, '求解'),
+      h('button', { class: 'btn primary', id: 'gs-solve', onclick: solve }, '求解'),
     ),
     gsOut,
     h('p', { class: 'hint' }, '参数列表按对目标的影响大小排序，只列上游参数。求解在参数滑杆的允许区间内进行；达不到时会告诉你目标的可达范围。'),
@@ -103,12 +104,14 @@ export default function sensitivity(app) {
       }).join('')}</tbody></table>`;
   }
   const phase = createPhase(app);
+  const solve2 = createSolve2(app);
   let top2 = [];
   const top2Btn = h('button', { class: 'btn', type: 'button', id: 'sens-top2', onclick: () => { if (top2.length === 2) app.showPhaseCustom({ target, x: top2[0], y: top2[1] }); } }, '把前两名放进相图 ↑');
   const el = h('div', { style: { display: 'grid', gap: '16px' } },
     matSheet,
     phase.el,
     gsSheet,
+    solve2.el,
     h('div', { class: 'sheet' },
       h('h3', {}, '谁对这个指标影响最大', h('small', {}, '在当前参数和规则下，把每个参数单独上下拨动一步，其余不动')),
       h('div', { style: { display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' } }, h('b', {}, '目标：'), sel, modeSeg, top2Btn),
@@ -127,6 +130,7 @@ export default function sensitivity(app) {
     if (!gsInit) { fillParams(); gsInit = true; }
     renderMatrix();
     phase.update();
+    solve2.update();
     for (const b of modeSeg.children) b.setAttribute('aria-pressed', String(b.dataset.m === mode));
     if (!app.sim.has(target)) target = 'p_d_2035';
     const g = app.sim.graph;

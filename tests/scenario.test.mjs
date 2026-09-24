@@ -18,3 +18,14 @@ test('情景：快照/恢复、编码/解码往返后数值完全一致', () => 
   assert.deepEqual(c.values, a.values);
   assert.throws(() => decodeScenario('FS1.bm90IGpzb24'));
 });
+
+test('只切换规则、不改参数时，情景代码里没有参数（没有浮点残差）', async () => {
+  const { MODE_OPTIONS } = await import('../src/model/specs.js');
+  for (const [k, def] of Object.entries(MODE_OPTIONS)) {
+    for (const v of Object.keys(def.options)) {
+      const sim = new Sim();
+      sim.setMode(k, v);
+      assert.deepEqual(sim.toScenario().i, {}, `${k}=${v}`);
+    }
+  }
+});

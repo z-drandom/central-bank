@@ -63,6 +63,9 @@ export class Sim {
       else inputs[n.id] = n.base;
     }
     rebaseOnModeChange(prevModes, this.modes, prev, inputs);
+    // 沿用计算值时会带进 1e-12 量级的浮点误差；与基线相差在相对 1e-9 以内的直接吸附回基线，
+    // 避免它们被当成"改过的参数"（情景代码、归因里都会出现）
+    for (const n of g.inputs()) if (!changed(inputs[n.id], n.base)) inputs[n.id] = n.base;
     this.graph = g;
     this.inputs = inputs;
     this._refreshBase();

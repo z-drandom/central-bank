@@ -2,12 +2,13 @@
 // 用 Shapley 分解：把参数逐个加入的所有顺序都走一遍，取每个参数加入时带来的变化的平均值。
 // 性质：各参数贡献之和精确等于总变化；交互作用按对称原则分给相关参数。
 // 参数不超过 maxExact 个时精确计算（2ⁿ 次求值）；更多时只给单独效果和交互余项。
+import { changed } from '../engine/graph.js';
 
 /** 当前规则下，相对原图基线改过的、且在 target 上游的输入参数 */
 export function changedUpstreamInputs(graph, inputs, target) {
   const up = new Set(graph.upstream(target));
   return graph.inputs()
-    .filter((n) => up.has(n.id) && (inputs[n.id] ?? n.base) !== n.base)
+    .filter((n) => up.has(n.id) && changed(inputs[n.id] ?? n.base, n.base))
     .map((n) => n.id);
 }
 

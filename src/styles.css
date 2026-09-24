@@ -621,3 +621,10 @@ button.contrib-row:hover { background: var(--surface-2); }
 .c-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; }
 .c-bar i.pos { background: var(--up); } .c-bar i.neg { background: var(--down); } .c-bar i.mix { background: var(--gold); }
 .c-val { font-weight: 600; white-space: nowrap; }
+.fill-up { fill: var(--up); } .fill-down { fill: var(--down); }
+.sens-row:hover rect:first-child { fill: var(--surface-2); }
+.tour { border: 2px solid var(--ink); display: grid; gap: 10px; }
+.tour-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.tour-steps p { margin: 4px 0 0; color: var(--ink-2); font-size: 13px; }
+.tour-steps b { font: 700 15px var(--f-display); }
+@media (max-width: 760px) { .tour-steps { grid-template-columns: minmax(0, 1fr); } }

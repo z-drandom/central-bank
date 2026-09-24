@@ -25,21 +25,58 @@ export function createApp(root) {
   let current = null;
   let scheduled = false;
 
+  // 撤销 / 重做：连续拖动滑杆（间隔 < 700ms）只记一步
+  const hist = { past: [], future: [], last: 0 };
+  function record(force = false) {
+    const t = Date.now();
+    if (force || t - hist.last > 700) {
+      hist.past.push(sim.snapshot());
+      if (hist.past.length > 120) hist.past.shift();
+      hist.future = [];
+    }
+    hist.last = t;
+  }
+
   const app = {
     sim,
     get v() { return sim.values; },
     get b() { return sim.base; },
     set(id, value) {
       if (!sim.isInput(id) || !Number.isFinite(value)) return;
+      record();
       sim.set(id, value);
       schedule();
     },
-    setMany(obj) { sim.setMany(obj); schedule(); },
+    setMany(obj) { record(true); sim.setMany(obj); schedule(); },
     setMode(key, val) {
+      record(true);
       sim.setMode(key, val);
       rebuildAll();
     },
+    undo() {
+      if (!hist.past.length) return;
+      hist.future.push(sim.snapshot());
+      sim.restore(hist.past.pop());
+      hist.last = 0;
+      rebuildAll();
+      flash('已撤销');
+    },
+    redo() {
+      if (!hist.future.length) return;
+      hist.past.push(sim.snapshot());
+      sim.restore(hist.future.pop());
+      hist.last = 0;
+      rebuildAll();
+      flash('已重做');
+    },
+    restore(snap, label) {
+      record(true);
+      sim.restore(snap);
+      rebuildAll();
+      if (label) flash(label);
+    },
     applyPreset(p) {
+      record(true);
       if (p.modes) for (const [k, v] of Object.entries(p.modes)) sim.setMode(k, v);
       if (p.reset) sim.reset();
       sim.apply(p.changes ?? []);
@@ -48,11 +85,13 @@ export function createApp(root) {
       flash(`已应用情景：${p.label}`);
     },
     resetTab(config) {
+      record(true);
       const ids = config.items.flatMap((x) => x.ids ?? []).filter((id) => sim.isInput(id));
       sim.reset(ids);
       schedule();
     },
     resetAll() {
+      record(true);
       sim.resetAll();
       rebuildAll();
       flash('已恢复到原图数值');
@@ -75,6 +114,8 @@ export function createApp(root) {
     );
     return { k, el, v, d, bar };
   });
+  const undoBtn = h('button', { class: 'btn ghost', onclick: () => app.undo(), title: '撤销（Ctrl+Z）', 'aria-label': '撤销' }, '↶ 撤销');
+  const redoBtn = h('button', { class: 'btn ghost', onclick: () => app.redo(), title: '重做（Ctrl+Shift+Z）', 'aria-label': '重做' }, '↷ 重做');
   const tabBar = h('nav', { class: 'tabs', role: 'tablist', 'aria-label': '模块' });
   const toast = h('div', { role: 'status', 'aria-live': 'polite', style: { position: 'fixed', left: '50%', bottom: '24px', transform: 'translateX(-50%)', background: 'var(--ink)', color: 'var(--paper)', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', zIndex: 60, opacity: 0, transition: 'opacity .2s', pointerEvents: 'none' } });
   const top = h('header', { class: 'top' },
@@ -82,6 +123,8 @@ export function createApp(root) {
       h('h1', {}, h('span', { class: 'seal', 'aria-hidden': 'true' }, '財'), '中国财政沙盘'),
       h('p', {}, '把四张财政图接成一台机器：拧任何一个旋钮，都能看到它沿公式传到哪里'),
       h('span', { class: 'spacer' }),
+      undoBtn,
+      redoBtn,
       h('button', { class: 'btn', onclick: () => app.resetAll(), title: '所有参数和规则恢复原图' }, '全部复原'),
     ),
     h('div', { class: 'kpis' }, kpiEls.map((x) => x.el)),
@@ -186,6 +229,8 @@ export function createApp(root) {
       t.badge.textContent = n > 99 ? '99+' : String(n);
       t.badge.title = `${n} 个数字相对原图有变化`;
     }
+    undoBtn.disabled = !hist.past.length;
+    redoBtn.disabled = !hist.future.length;
     const t = tabs.get(current);
     t?.panel?.update();
     t?.view.update();
@@ -210,6 +255,12 @@ export function createApp(root) {
     if (tabs.has(id) && id !== current) go(id);
   });
   window.addEventListener('resize', () => schedule());
+  document.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return;
+    if (e.target.matches?.('input[type=text], input[type=search], textarea')) return;
+    e.preventDefault();
+    if (e.shiftKey) app.redo(); else app.undo();
+  });
 
   let start = views[0].id;
   try {

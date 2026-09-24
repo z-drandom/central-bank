@@ -1,6 +1,8 @@
 // 总览：四张图如何连成一台机器
 import { h, esc } from '../dom.js';
 import { val, deltaParts, isChanged } from '../common.js';
+import { load, save } from '../dom.js';
+import { createScenarios } from '../scenarios.js';
 
 const CLUSTERS = [
   { id: 'y25', tab: 'y25', x: 20, y: 30, w: 280, hh: 250, img: '③', title: '2025 年执行', sub: '税种 → 收入 → 支出 → 差额',
@@ -80,13 +82,29 @@ export default function overview(app) {
     if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); app.go(c.dataset.tab); }
   });
   const story = h('ol', { class: 'story' });
+  const scen = createScenarios(app);
+  const TOUR = 'fiscal-sandbox-tour-v1';
+  const tour = h('div', { class: 'sheet tour', hidden: !!load(TOUR, false) },
+    h('h3', {}, '三步上手'),
+    h('div', { class: 'tour-steps' },
+      h('div', {}, h('b', {}, '① 点数字'), h('p', {}, '图里、表里、顶栏的任何数字都能点。卡片会给出"公式 / 读法 / 代入"，以及它由谁决定、又影响谁。')),
+      h('div', {}, h('b', {}, '② 拧旋钮'), h('p', {}, '右侧每个滑杆上的金色刻度是原图数值。拖动后，页面底部的"传导链"按顺序列出每个被牵动的数字。')),
+      h('div', {}, h('b', {}, '③ 换规则'), h('p', {}, '"平衡规则"决定缺口由谁兜底：同样少收 1,000 亿，锁定赤字就要砍支出，锁定支出就要多借债。')),
+    ),
+    h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+      h('button', { class: 'btn primary', onclick: () => { app.applyPreset({ label: '示例：增值税少收 10%', changes: [{ id: 't_vat', mul: 0.9 }] }); } }, '试一下：增值税少收 10%'),
+      h('button', { class: 'btn ghost', onclick: () => { tour.hidden = true; save(TOUR, true); } }, '知道了，不再显示'),
+    ),
+  );
   const el = h('div', { style: { display: 'contents' } },
+    tour,
     h('div', { class: 'sheet' },
       h('h3', {}, '四张图是一台机器', h('small', {}, '方框 = 一张图；箭头上写着连接它们的公式。拖动右侧旋钮，看变化沿哪几条箭头传播（亮起的箭头）')),
       map,
       h('div', { class: 'swipe-hint' }, '← 左右滑动查看完整图 →'),
     ),
     h('div', { class: 'sheet' }, h('h3', {}, '钱是怎么转一圈的'), story),
+    scen.el,
   );
 
   function update() {
@@ -106,6 +124,7 @@ export default function overview(app) {
       `<li><div><b>滚动十年</b>：按当前假设，2035 年政府负债率 ${T('p_d_2035')}，付息占收入 ${T('p_ib_2035')}。</div></li>`,
     ].join('');
     void v;
+    scen.update();
   }
 
   return {

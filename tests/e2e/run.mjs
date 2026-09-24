@@ -38,7 +38,7 @@ await t('每个标签页都能打开且无脚本错误', async () => {
   const page = await newPage();
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
   const tabs = await page.locator('.tab').count();
-  assert.equal(tabs, 8);
+  assert.equal(tabs, 9);
   for (let i = 0; i < tabs; i++) {
     await page.locator('.tab').nth(i).click();
     await page.waitForTimeout(80);
@@ -184,7 +184,7 @@ await t('传导路径图可以渲染', async () => {
 
 await t('手机宽度：页面不出现横向滚动', async () => {
   const page = await newPage({ viewport: { width: 390, height: 844 } });
-  for (const tab of ['overview', 'y25', 'b26', 'debt', 'fb', 'proj', 'play', 'book']) {
+  for (const tab of ['overview', 'y25', 'b26', 'debt', 'fb', 'proj', 'sens', 'play', 'book']) {
     await page.goto(URL + '#' + tab, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(80);
     const { sw, w } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth }));
@@ -201,6 +201,47 @@ await t('深色模式：背景为深色，文字为浅色', async () => {
   const lum = (c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
   assert.ok(lum(bg) < 60, `背景太亮：${bg}`);
   assert.ok(lum(fg) > 180, `文字太暗：${fg}`);
+  await page.close();
+});
+
+await t('撤销 / 重做', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => __fiscal.set('dr26', 0.05));
+  await page.waitForTimeout(800);
+  await page.evaluate(() => __fiscal.setMode('c26', 'spend'));
+  await page.waitForTimeout(100);
+  await page.locator('button[aria-label="撤销"]').click();
+  assert.equal(await page.evaluate(() => __fiscal.sim.modes.c26), 'rate');
+  assert.ok(Math.abs((await page.evaluate(() => __fiscal.v.dr26)) - 0.05) < 1e-12);
+  await page.locator('button[aria-label="撤销"]').click();
+  assert.ok(Math.abs((await page.evaluate(() => __fiscal.v.dr26)) - 0.04) < 1e-12);
+  await page.keyboard.press('Control+Shift+Z');
+  assert.ok(Math.abs((await page.evaluate(() => __fiscal.v.dr26)) - 0.05) < 1e-12);
+  await page.close();
+});
+
+await t('情景：存 A、复制代码、按代码载入后数值一致', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#overview', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { __fiscal.set('t_vat', 60000); __fiscal.setMode('fb4', 'gap'); __fiscal.set('f4_exp', 9.9); });
+  await page.waitForTimeout(100);
+  await page.locator('button', { hasText: '当前存为 A' }).click();
+  await page.locator('button', { hasText: '复制当前情景代码' }).click();
+  await page.waitForTimeout(100);
+  const code = await page.locator('#scen-code').inputValue();
+  assert.match(code, /^FS1\./);
+  const before = await page.evaluate(() => ({ ...__fiscal.v }));
+  await page.locator('button', { hasText: '全部复原' }).click();
+  assert.equal(await page.evaluate(() => __fiscal.sim.changedIds().length), 0);
+  await page.locator('#scen-code').fill(code);
+  await page.locator('button', { hasText: '按代码载入' }).click();
+  await page.waitForTimeout(100);
+  const after = await page.evaluate(() => ({ ...__fiscal.v }));
+  for (const k of ['rev25', 'rc26', 'f4_sub', 'f1_other', 'p_d_2035']) assert.equal(after[k], before[k], k);
+  const cellA = await page.locator('#scenarios tbody tr').first().locator('td').nth(2).innerText();
+  assert.notEqual(cellA.trim(), '—', '情景 A 列应有数值');
+  assert.deepEqual(page.errors, []);
   await page.close();
 });
 

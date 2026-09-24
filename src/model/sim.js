@@ -109,6 +109,34 @@ export class Sim {
     return this.graph.inputs().filter((n) => changed(this.values[n.id], this.base[n.id])).map((n) => n.id);
   }
 
+  /** 可序列化的状态（用于撤销、情景保存） */
+  snapshot() {
+    return { modes: { ...this.modes }, inputs: { ...this.inputs } };
+  }
+
+  restore(snap) {
+    this.modes = { ...DEFAULT_MODES, ...snap.modes };
+    this.graph = new Graph(buildSpecs(this.modes));
+    const inputs = this.graph.baseInputs();
+    for (const [k, v] of Object.entries(snap.inputs ?? {})) if (k in inputs && Number.isFinite(v)) inputs[k] = v;
+    this.inputs = inputs;
+    this._refreshBase();
+    return this.recompute();
+  }
+
+  /** 紧凑情景：只记录与默认不同的规则和与基线不同的参数 */
+  toScenario() {
+    const m = {};
+    for (const [k, v] of Object.entries(this.modes)) if (DEFAULT_MODES[k] !== v) m[k] = v;
+    const i = {};
+    for (const n of this.graph.inputs()) if (this.inputs[n.id] !== n.base) i[n.id] = this.inputs[n.id];
+    return { m, i };
+  }
+
+  fromScenario(sc) {
+    return this.restore({ modes: sc.m ?? {}, inputs: sc.i ?? {} });
+  }
+
   /** 快照：用于"先猜后算"等沙盒计算，不影响当前状态 */
   clone() {
     const s = Object.create(Sim.prototype);

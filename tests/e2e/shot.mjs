@@ -22,7 +22,7 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
 await page.goto(pathToFileURL(resolve('dist/index.html')).href + '#' + tab, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(400);
-if (script) { await page.evaluate(script); await page.waitForTimeout(300); }
+if (script) { await page.evaluate(script); await page.waitForTimeout(600); }
 if (sel) await page.locator(sel).first().screenshot({ path: out });
 else await page.screenshot({ path: out, fullPage: full });
 const real = errors.filter((e) => !/ERR_(TOO_MANY_RETRIES|CERT|NAME|CONNECTION|TUNNEL|PROXY|FAILED)/.test(e));

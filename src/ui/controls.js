@@ -109,6 +109,7 @@ function makeMode(app, key) {
 export function createPanel(app, config) {
   const el = h('aside', { class: 'panel', 'aria-label': '参数面板' });
   let ctls = [];
+  let searchCtls = [];
   const openState = new Map();
 
   function build() {
@@ -120,6 +121,27 @@ export function createPanel(app, config) {
         h('button', { class: 'btn ghost', onclick: () => app.resetTab(config) }, '本页复原'),
       ),
     );
+    // 参数搜索：在全部输入参数里找（不限本页）
+    const q = h('input', { class: 'search', type: 'search', placeholder: '搜参数：如"契税""利率""专项债"', 'aria-label': '搜索参数', id: `ps-${config.title}` });
+    const results = h('div', { class: 'grp-body', style: { paddingTop: '8px' } });
+    q.addEventListener('input', () => {
+      results.innerHTML = '';
+      searchCtls = [];
+      const t = q.value.trim().toLowerCase();
+      if (!t) return;
+      const hay = (n) => `${n.label} ${n.id} ${n.src ?? ''} ${n.kw ?? ''} ${n.note ?? ''}`.toLowerCase();
+      const all = app.sim.graph.inputs().filter((n) => !n.fixed && hay(n).includes(t));
+      // 名称命中的排前面
+      all.sort((a, b) => Number(!a.label.toLowerCase().includes(t)) - Number(!b.label.toLowerCase().includes(t)));
+      const hits = all.slice(0, 8);
+      if (!hits.length) { results.append(h('div', { class: 'hint' }, '没有找到。当前平衡规则下是公式计算的量不能直接调，可以在"公式手册"里搜。')); return; }
+      for (const n of hits) {
+        const c = makeSlider(app, n.id, { idPrefix: 'ps-' });
+        results.append(c.el);
+        searchCtls.push(c);
+      }
+    });
+    el.append(h('div', { style: { padding: '10px 14px 0' } }, q), results);
     if (config.presets?.length) {
       const box = h('div', { class: 'presets' });
       for (const p of config.presets) {
@@ -156,6 +178,7 @@ export function createPanel(app, config) {
   }
 
   function update() {
+    for (const c of searchCtls) c.sync();
     for (const g of ctls) {
       let n = 0;
       for (const c of g.groupCtls) {

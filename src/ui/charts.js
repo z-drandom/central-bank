@@ -108,3 +108,35 @@ export function stackChart({ years, parts, net, width = 640, height = 240, yFmt 
   });
   return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(title)}">${s}</svg>`;
 }
+
+/** 扇形图：p10–p90 与 p25–p75 两层区间 + 中位数 + 当前路径 */
+export function fanChart({ years, q, current, width = 760, height = 280, refs = [], yFmt = (v) => `${(v * 100).toFixed(0)}%`, title = '' }) {
+  const m = { l: 46, r: 110, t: 16, b: 26 };
+  const W = width - m.l - m.r;
+  const H = height - m.t - m.b;
+  const all = [...q.p10, ...q.p90, ...current.map((p) => p.y), ...refs.map((r) => r.y)];
+  let lo = Math.min(...all) * 0.96;
+  let hi = Math.max(...all) * 1.03;
+  const ticks = niceTicks(lo, hi);
+  lo = Math.min(lo, ticks[0]);
+  hi = Math.max(hi, ticks.at(-1));
+  const x0 = years[0], x1 = years.at(-1);
+  const X = (x) => m.l + ((x - x0) / (x1 - x0 || 1)) * W;
+  const Y = (y) => m.t + (1 - (y - lo) / (hi - lo)) * H;
+  const band = (a, b, cls) => `<path d="${years.map((y, i) => `${i ? 'L' : 'M'}${X(y).toFixed(1)},${Y(b[i]).toFixed(1)}`).join('')}${[...years].reverse().map((y, i) => `L${X(y).toFixed(1)},${Y(a[years.length - 1 - i]).toFixed(1)}`).join('')}Z" class="${cls}"/>`;
+  let s = '';
+  for (const t of ticks) s += `<line class="grid-line" x1="${m.l}" x2="${m.l + W}" y1="${Y(t)}" y2="${Y(t)}"/><text class="axis-t" x="${m.l - 6}" y="${Y(t) + 4}" text-anchor="end">${esc(yFmt(t))}</text>`;
+  years.forEach((x, i) => { if (i % 2 === 0 || (i === years.length - 1 && i % 2 === 0)) s += `<text class="axis-t" x="${X(x)}" y="${m.t + H + 17}" text-anchor="middle">${x}</text>`; });
+  for (const r of refs) s += `<line x1="${m.l}" x2="${m.l + W}" y1="${Y(r.y)}" y2="${Y(r.y)}" stroke="var(--gold)" stroke-dasharray="4 4"/><text x="${m.l + W + 4}" y="${Y(r.y) + 4}" class="t-small" style="fill:var(--gold)">${esc(r.label)}</text>`;
+  s += band(q.p10, q.p90, 'fan-outer');
+  s += band(q.p25, q.p75, 'fan-inner');
+  s += `<path d="${years.map((y, i) => `${i ? 'L' : 'M'}${X(y).toFixed(1)},${Y(q.p50[i]).toFixed(1)}`).join('')}" fill="none" class="stroke-xfer" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  s += `<path d="${current.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`).join('')}" fill="none" class="stroke-xfer" stroke-width="2.4"/>`;
+  for (const p of current) s += `<circle data-node="${p.id}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3" class="fill-xfer"/>`;
+  const li = years.length - 1;
+  const lx = X(x1) + 8;
+  s += `<text x="${lx}" y="${Y(q.p90[li]) + 4}" class="t-small">90%：${esc(yFmt(q.p90[li]))}</text>`;
+  s += `<text x="${lx}" y="${Y(current.at(-1).y) + 4}" class="t-name" style="font-size:12px">当前 ${esc(yFmt(current.at(-1).y))}</text>`;
+  s += `<text x="${lx}" y="${Y(q.p10[li]) + 4}" class="t-small">10%：${esc(yFmt(q.p10[li]))}</text>`;
+  return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(title)}">${s}</svg>`;
+}

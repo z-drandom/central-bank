@@ -428,14 +428,14 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     f('broad_gdp1', 'w_{1}', '2026年末广义负债率', 'broad1 / gdp26', { unit: 'pct' });
 
     inp('rcg', 'r_{c}', '国债平均付息率', CALIB.rcg, {
-      unit: 'pct', range: pctRange(0.005, 0.05, 0.0001), tag: 'calib', src: '校准：8,739.90 ÷ 412,300',
+      unit: 'pct', range: pctRange(0.005, 0.05, 0.0001), tag: 'calib', src: '校准：8,739.90 ÷ 412,300', kw: '利率 利息 国债收益率',
       note: '用图②中央付息 8,739.90 亿除以图①国债余额 41.23 万亿得到的隐含平均付息率，约 2.12%。',
     });
     inp('rl', 'r_{l}', '地方政府债券平均利率', 0.028, {
       unit: 'pct', range: pctRange(0.01, 0.06, 0.0001), tag: 'assume',
       note: '假设值。检验：2025 年地方付息推算约 5,300 亿，÷ 地方一般债约 19 万亿 ≈ 2.8%。',
     });
-    inp('rh', 'r_{h}', '城投有息债务平均成本', 0.05, { unit: 'pct', range: pctRange(0.02, 0.1, 0.0001), tag: 'assume', note: '城投融资成本普遍高于政府债券，假设 5%。' });
+    inp('rh', 'r_{h}', '城投有息债务平均成本', 0.05, { unit: 'pct', range: pctRange(0.02, 0.1, 0.0001), tag: 'assume', kw: '利率 利息 融资成本', note: '城投融资成本普遍高于政府债券，假设 5%。' });
     f('int_lg26', 'I_{lg}', '地方一般债付息（一般预算）', 'rl * blg0', { kind: 'assume' });
     f('int_ls26', 'I_{ls}', '地方专项债付息（基金预算）', 'rl * bls0', { kind: 'assume' });
     f('int_h26', 'I_{h}', '城投隐性债务付息', 'rh * hib_sel', { kind: 'assume' });

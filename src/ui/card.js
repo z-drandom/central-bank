@@ -90,6 +90,15 @@ export function createCard(app) {
       if (L.pron) tbl.append(h('div', { class: 'k' }, '拟音'), h('div', { class: 'v read' }, L.pron));
       tbl.append(h('div', { class: 'k' }, '代入'), h('div', { class: 'v subst', html: L.subst }));
       body.append(tbl);
+      const T = formulaLines(app.sim.graph, id, app.v, { html: false });
+      const plain = [`${s.label}（${k.text}）`, `公式：${T.sym}`, `读法：${T.read}`, ...(T.pron ? [`拟音：${T.pron}`] : []), `代入：${T.subst}`].join('\n');
+      const copied = h('span', { class: 'hint', role: 'status' });
+      const ta = h('textarea', { class: 'search', rows: 5, readonly: true, hidden: true, 'aria-label': '公式文本' }, plain);
+      body.append(h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' } },
+        h('button', { class: 'btn', onclick: async () => {
+          try { await navigator.clipboard.writeText(plain); copied.textContent = '已复制四行公式'; }
+          catch { ta.hidden = false; ta.focus(); ta.select(); copied.textContent = '浏览器不允许自动复制，文本已选中'; }
+        } }, '复制公式'), copied), ta);
     } else if (!s.fixed) {
       slider = makeSlider(app, id, { idPrefix: 'card-' });
       body.append(h('div', { class: 'card-ctl' }, slider.el));

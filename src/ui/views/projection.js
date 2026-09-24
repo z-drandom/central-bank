@@ -1,6 +1,7 @@
 // 十年推演：债务动态 Δd = d₋₁·(r − g)/(1 + g) + 基本赤字率 + 其他债务融资
 import { h, esc } from '../dom.js';
-import { lineChart, stackChart } from '../charts.js';
+import { lineChart, stackChart, fanChart } from '../charts.js';
+import { fan, FAN_RANGES } from '../../model/fan.js';
 import { ledgerHTML } from '../common.js';
 import { formulaLines, fmt } from '../../model/format.js';
 import { PROJ_START, PROJ_END } from '../../model/specs.js';
@@ -20,12 +21,20 @@ export default function projection(app) {
   yearSel.value = String(year);
   yearSel.addEventListener('change', () => { year = Number(yearSel.value); update(); });
   const fx = h('div');
+  const fanBox = h('div', { class: 'chart' });
+  const fanNote = h('p', { class: 'hint', style: { margin: '6px 0 0' } });
+  let fanTimer = null;
   const table = h('div', { class: 'tbl-wrap' });
   const el = h('div', { style: { display: 'contents' } },
     h('div', { class: 'sheet' },
       h('h3', {}, '负债率会走到哪里', h('small', {}, '实线 = 当前参数；虚线 = 原图基线；2025 年为图①起点')),
       main,
       ruleHint,
+    ),
+    h('div', { class: 'sheet' },
+      h('h3', {}, '假设不确定时，负债率会落在哪里', h('small', {}, '在下方所列区间内同时随机改动四个假设，重算 300 次；深色带 = 中间 50%，浅色带 = 中间 80%')),
+      fanBox,
+      fanNote,
     ),
     h('div', { class: 'sheet' },
       h('h3', {}, '每年负债率变动拆成三块', h('small', {}, '柱 = 分量（个百分点），圆点 = 当年负债率净变动')),
@@ -101,6 +110,15 @@ export default function projection(app) {
         <div class="k">代入</div><div class="v subst">${L.subst}</div>
       </div>
       <p class="note" style="margin:8px 0 0">推导：B<sub>t</sub> = B<sub>t−1</sub> + D<sub>t</sub> + 其他融资，D<sub>t</sub> = 基本赤字 + 利息，利息 = r·B<sub>t−1</sub>，Y<sub>t</sub> = Y<sub>t−1</sub>(1+g)。两边除以 Y<sub>t</sub> 再减去 d<sub>t−1</sub>，即得上式。专项债利息由政府性基金预算支付，不进入 r，所以有效利率低于票面利率。</p>`;
+    // 扇形图：计算量较大（300 次全图重算），停止拖动 250ms 后再算
+    clearTimeout(fanTimer);
+    fanTimer = setTimeout(() => {
+      const yrs = YEARS;
+      const r = fan(app.sim.graph, app.sim.inputs, 'p_d', yrs, { n: 300 });
+      fanBox.innerHTML = fanChart({ years: yrs, q: r.q, current: yrs.map((y) => ({ x: y, y: app.v[`p_d_${y}`], id: `p_d_${y}` })), refs: [{ y: 0.6, label: '60% 参考线' }], title: '政府负债率不确定性范围' });
+      const ranges = FAN_RANGES.filter((x) => app.sim.isInput(x.id)).map((x) => `${x.label} ${x.kind === 'mul' ? `×${x.lo}～×${x.hi}` : `${x.lo >= 0 ? '+' : ''}${x.id === 'peps' ? x.lo : (x.lo * 100).toFixed(1) + 'pp'}～+${x.id === 'peps' ? x.hi : (x.hi * 100).toFixed(1) + 'pp'}`}`).join('；');
+      fanNote.textContent = `抽样区间（相对当前参数）：${ranges}。每一次抽样都用同一套公式重算整张依赖图；这是"如果假设在这个范围内"的敏感性展示，不是概率预测。`;
+    }, 250);
     // 表格
     const cols = [
       ['GDP（万亿）', 'Y', (y) => (y === PROJ_START ? 'gdp26' : `p_Y_${y}`)],

@@ -1,5 +1,7 @@
 // 十年推演：债务动态 Δd = d₋₁·(r − g)/(1 + g) + 基本赤字率 + 其他债务融资
-import { h, esc } from '../dom.js';
+import { h, esc, load } from '../dom.js';
+import { Sim } from '../../model/sim.js';
+import { SCEN_KEY } from '../scenarios.js';
 import { lineChart, stackChart, fanChart } from '../charts.js';
 import { fan, FAN_RANGES } from '../../model/fan.js';
 import { ledgerHTML } from '../common.js';
@@ -25,10 +27,12 @@ export default function projection(app) {
   const fanNote = h('p', { class: 'hint', style: { margin: '6px 0 0' } });
   let fanTimer = null;
   const table = h('div', { class: 'tbl-wrap' });
+  const scenNote = h('p', { class: 'hint', hidden: true, style: { margin: '4px 0 0' } }, '带小方块的细线 = 你在"总览 → 情景对比"里存的情景 A / B（政府负债率），可以直接比较几种未来。');
   const el = h('div', { style: { display: 'contents' } },
     h('div', { class: 'sheet' },
       h('h3', {}, '负债率会走到哪里', h('small', {}, '实线 = 当前参数；虚线 = 原图基线；2025 年为图①起点')),
       main,
+      scenNote,
       ruleHint,
     ),
     h('div', { class: 'sheet' },
@@ -63,12 +67,34 @@ export default function projection(app) {
     return arr;
   }
 
+  // 已保存的情景 A/B：各自算一遍，画成对照细线（按情景内容缓存）
+  const scenCache = new Map();
+  function scenarioSeries() {
+    const store = load(SCEN_KEY, { A: null, B: null });
+    const out = [];
+    for (const [k, cls] of [['A', 'stroke-gold'], ['B', 'stroke-exp']]) {
+      const sc = store?.[k]?.sc;
+      if (!sc) continue;
+      const key = JSON.stringify(sc);
+      if (!scenCache.has(key)) {
+        const s = new Sim();
+        s.fromScenario(sc);
+        scenCache.set(key, pts('d', 'debt_gdp0', s.values).map((p) => ({ x: p.x, y: p.y })));
+      }
+      out.push({ label: `情景 ${k}`, cls, pts: scenCache.get(key), thin: true });
+    }
+    return out;
+  }
+
   function update() {
     const v = app.v, b = app.b;
+    const scen = scenarioSeries();
+    scenNote.hidden = !scen.length;
     main.innerHTML = lineChart({
       series: [
         { label: '含隐债负债率', cls: 'stroke-hid', pts: pts('w', 'broad_gdp0', v), base: pts('w', 'broad_gdp0', b) },
         { label: '政府负债率', cls: 'stroke-xfer', pts: pts('d', 'debt_gdp0', v), base: pts('d', 'debt_gdp0', b) },
+        ...scen,
       ],
       refs: [{ y: 0.6, label: '60% 参考线' }, ...(v.p_dstar > 0 && v.p_dstar < 1.2 * Math.max(v.p_w_2035, v.p_d_2035) ? [{ y: v.p_dstar, label: `长期收敛 ${(v.p_dstar * 100).toFixed(0)}%` }] : [])],
       yMin: 0.4,

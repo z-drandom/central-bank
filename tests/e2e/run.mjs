@@ -588,6 +588,20 @@ await t('公式手册：复制全部数字（CSV），剪贴板被拒时给出�
   await page.close();
 });
 
+await t('十年推演：已存的情景 A 画成对照细线', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#overview', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} __fiscal.set('pdr', 0.05); });
+  await page.locator('button', { hasText: '当前存为 A' }).click();
+  await page.evaluate(() => { __fiscal.resetAll(); __fiscal.go('proj'); });
+  await page.waitForTimeout(300);
+  const txt = await page.locator('#main .sheet').first().innerText();
+  assert.match(txt, /情景 A/);
+  assert.match(txt, /带小方块的细线/);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

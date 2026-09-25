@@ -4,7 +4,8 @@ import { Sim } from '../model/sim.js';
 import { fmt } from '../model/format.js';
 import { encodeScenario, decodeScenario } from '../model/scenario-code.js';
 
-const KEY = 'fiscal-sandbox-scenarios-v1';
+export const SCEN_KEY = 'fiscal-sandbox-scenarios-v1';
+const KEY = SCEN_KEY;
 const ROWS = [
   ['r26', '2026 全国收入'], ['e26', '2026 全国支出'], ['d26', '2026 全国赤字'], ['drate26', '2026 赤字率'],
   ['oth26', '中央本级"其它"支出'], ['el26', '地方支出'], ['self26', '地方自给率'],

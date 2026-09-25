@@ -56,13 +56,16 @@ export function lineChart({ series, width = 640, height = 260, yFmt = (v) => `${
     if (se.area) {
       s += `<path d="${path(se.pts)}L${X(se.pts.at(-1).x)},${Y(Math.max(lo, 0))}L${X(se.pts[0].x)},${Y(Math.max(lo, 0))}Z" class="${se.cls.replace('stroke', 'fill')}" opacity="0.08"/>`;
     }
-    s += `<path d="${path(se.pts)}" fill="none" class="${se.cls}" stroke-width="2.4" stroke-linejoin="round"/>`;
-    for (const p of se.pts) {
+    s += `<path d="${path(se.pts)}" fill="none" class="${se.cls}" stroke-width="${se.thin ? 1.6 : 2.4}" stroke-linejoin="round"${se.thin ? ' stroke-dasharray="1 0"' : ''}/>`;
+    if (se.thin) {
+      // 对照线：只画小方块标记，不可点击
+      for (const p of se.pts) s += `<rect x="${(X(p.x) - 2.5).toFixed(1)}" y="${(Y(p.y) - 2.5).toFixed(1)}" width="5" height="5" class="${se.cls.replace('stroke', 'fill')}"><title>${esc(se.label)} ${p.x}：${esc(neg(yFmt(p.y)))}</title></rect>`;
+    } else for (const p of se.pts) {
       s += `<circle data-node="${p.id}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p === se.pts.at(-1) ? 4.5 : 3}" class="${se.cls.replace('stroke', 'fill')}"><title>${p.x}：${esc(neg(yFmt(p.y)))}</title></circle>`;
     }
     const last = se.pts.at(-1);
     const ly = endY.get(si);
-    s += `<text data-node="${last.id}" x="${X(last.x) + 8}" y="${ly + 4}" class="t-name" style="font-size:12px">${esc(neg(yFmt(last.y)))}</text>`;
+    s += `<text ${last.id ? `data-node="${last.id}"` : ''} x="${X(last.x) + 8}" y="${ly + 4}" class="t-name" style="font-size:12px">${esc(neg(yFmt(last.y)))}</text>`;
     s += `<text x="${X(last.x) + 8}" y="${ly + 18}" class="t-small">${esc(se.label)}</text>`;
   }
   return `<svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(title)}">${s}</svg>`;

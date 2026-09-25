@@ -27,7 +27,7 @@ test('成就：基线状态一个数值类成就都不解锁；每个数值类�
 });
 
 test('成就：行为类按统计判定，已解锁的不重复', () => {
-  const stats = { set: 1, card: 20, modes: ['a', 'b', 'c', 'd', 'e'], challenges: CHALLENGES.map((c) => c.id), bestStreak: 10, quiz: [1, 2, 3, 4, 5, 6, 7, 8], paths: 1, phase: 1, solve2: 1, shapley: 1, replay: 1, stories: ['x', 'y', 'z'], threeStars: 1, finder: 1, history: 1 };
+  const stats = { set: 1, card: 20, modes: ['a', 'b', 'c', 'd', 'e'], challenges: CHALLENGES.map((c) => c.id), bestStreak: 10, quiz: [1, 2, 3, 4, 5, 6, 7, 8], paths: 1, phase: 1, solve2: 1, shapley: 1, replay: 1, stories: ['x', 'y', 'z'], threeStars: 1, finder: 1, history: 1, fast: 1, share: 1 };
   const all = checkAchievements([], stats, new Sim().values);
   for (const a of ACHIEVEMENTS.filter((x) => x.stat)) assert.ok(all.includes(a.id), a.id);
   assert.deepEqual(checkAchievements(all, stats, new Sim().values), []);
@@ -41,6 +41,7 @@ test('成就：界面实际发出的事件序列能解锁每一个行为类成�
     challenger: E('challenge', 1, { id: 'x', stars: 1 }), minister: E('challenge', CHALLENGES.length, (i) => ({ id: CHALLENGES[i].id, stars: 2 })),
     'three-stars': E('mission', 1, { stars: 3, streak: 1 }), quizzer: E('quiz', 8, (i) => `q${i}`),
     streak3: E('mission', 1, { stars: 1, streak: 3 }), streak10: E('mission', 1, { stars: 1, streak: 10 }),
+    lightning: E('mission', 1, { stars: 1, streak: 1, secs: 30 }), 'show-off': E('share'),
   };
   for (const a of ACHIEVEMENTS.filter((x) => x.stat)) {
     const seq = ways[a.id];
@@ -51,4 +52,13 @@ test('成就：界面实际发出的事件序列能解锁每一个行为类成�
     for (const [ev, p] of seq) recordEvent(stats, ev, p);
     assert.ok(checkAchievements([], stats, null).includes(a.id), `${a.id}：事件 ${seq[0][0]} 解锁不了`);
   }
+});
+
+test('成就：闪电手只认 30 秒以内（含）完成的任务', () => {
+  const s = {};
+  recordEvent(s, 'mission', { stars: 2, streak: 1, secs: 31 });
+  recordEvent(s, 'mission', { stars: 2, streak: 2 });
+  assert.ok(!checkAchievements([], s, null).includes('lightning'));
+  recordEvent(s, 'mission', { stars: 2, streak: 3, secs: 30 });
+  assert.ok(checkAchievements([], s, null).includes('lightning'));
 });

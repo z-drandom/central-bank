@@ -10,6 +10,8 @@ import { createPhase } from '../phase.js';
 import { createSolve2 } from '../solve2.js';
 import { createPaths } from '../paths.js';
 
+const MIX_OK = typeof CSS === 'undefined' || !CSS.supports || CSS.supports('color', 'color-mix(in srgb, red 50%, white)');
+
 export default function sensitivity(app) {
   let target = 'p_d_2035';
   let mode = 'mixed';
@@ -113,7 +115,9 @@ export default function sensitivity(app) {
           const cspec = app.sim.spec(MATRIX_COLS[j][0]);
           const t = Math.min(1, Math.abs(d) / colMax[j]);
           const small = Math.abs(d) < 1e-9 * Math.max(1, Math.abs(app.v[MATRIX_COLS[j][0]]));
-          const bg = small ? 'transparent' : `color-mix(in srgb, var(${d > 0 ? '--up' : '--down'}) ${Math.round(8 + t * 45)}%, var(--surface))`;
+          const c = `var(${d > 0 ? '--up' : '--down'})`;
+          // 不支持 color-mix 的旧浏览器：改画格子底部的数据条，长度与热度成正比
+          const bg = small ? 'transparent' : MIX_OK ? `color-mix(in srgb, ${c} ${Math.round(8 + t * 45)}%, var(--surface))` : `linear-gradient(${c},${c}) no-repeat left bottom/${Math.round(10 + t * 90)}% 3px`;
           return `<td class="n" data-pair="${r.id}|${MATRIX_COLS[j][0]}" tabindex="0" role="button" aria-label="${esc(sp.label)}对${esc(cspec.label)}的传导路径" style="cursor:pointer;background:${bg}">${small ? '0' : esc(short(cspec, d))}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table>`;

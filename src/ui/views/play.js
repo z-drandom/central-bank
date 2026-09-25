@@ -4,7 +4,7 @@ import { CHALLENGES, evalGoals } from '../../model/challenges.js';
 import { QUIZ, gradeQuestion } from '../../model/quiz.js';
 import { formulaLines, fmt, fmtDelta } from '../../model/format.js';
 import { EVENTS, playEvent } from '../../model/events.js';
-import { makeMission } from '../../model/missions.js';
+import { makeMission, shareText, fmtSecs } from '../../model/missions.js';
 
 const STORE = 'fiscal-sandbox-progress-v1';
 const MSTORE = 'fiscal-sandbox-missions-v1';
@@ -56,6 +56,7 @@ export function startChallenge(app, ch) {
   if (cur?.mission && !cur.completed && !ch.mission) { const m0 = mload(); if (m0.streak) { m0.streak = 0; save(MSTORE, m0); } }
   app.applyPreset({ fresh: true, label: ch.title, modes: ch.setup.modes, changes: ch.setup.changes });
   app.challengeStart = app.sim.snapshot();
+  app.challengeT0 = Date.now();
   app.activeChallenge = ch;
   app.go(ch.tab);
   app.tracker?.show();
@@ -72,27 +73,54 @@ export function createTracker(app) {
   const storyLine = h('div', { class: 'hint tr-story' });
   const levers = h('div', { class: 'tr-levers' });
   const nextBtn = h('button', { class: 'btn primary', hidden: true, onclick: () => startMission(app) }, '下一题 🎲');
+  // 计时：只在随机任务进行中走；aria-hidden，免得读屏软件每秒播报
+  const timer = h('span', { class: 'tr-timer num', 'aria-hidden': 'true' });
+  let tick = null;
+  const elapsed = () => Math.max(1, Math.round((Date.now() - (app.challengeT0 ?? Date.now())) / 1000));
+  function drawTimer() {
+    const ch = app.activeChallenge;
+    timer.hidden = !ch?.mission;
+    if (ch?.mission) timer.textContent = `⏱ ${fmtSecs(ch.result ? ch.result.secs : elapsed())}`;
+    if (!ch?.mission || ch.result || el.hidden) { clearInterval(tick); tick = null; }
+  }
+  // 晒战绩：复制文字；剪贴板不可用时把文字摆出来让人手动复制
+  const shareBox = h('textarea', { class: 'share-box', readonly: true, hidden: true, rows: 6, 'aria-label': '战绩文字' });
+  const shareBtn = h('button', { class: 'btn', id: 'share-go', hidden: true, onclick: async () => {
+    const ch = app.activeChallenge;
+    if (!ch?.result) return;
+    const text = shareText(ch, ch.result);
+    app.track?.('share');
+    try { await navigator.clipboard.writeText(text); app.flash('战绩已复制，发给朋友比一比'); shareBox.hidden = true; }
+    catch { shareBox.value = text; shareBox.hidden = false; shareBox.select(); app.flash('浏览器不让复制，请手动复制下面的文字'); }
+  } }, '晒战绩 📣');
   const min = h('button', { class: 'btn ghost', 'aria-label': '收起任务卡', onclick: () => { el.classList.toggle('mini'); } }, '—');
   const el = h('aside', { class: 'tracker', hidden: true, role: 'status', 'aria-live': 'polite' },
-    h('div', { class: 'tracker-head' }, tag, title, h('span', { style: { flex: 1 } }), min,
+    h('div', { class: 'tracker-head' }, tag, title, h('span', { style: { flex: 1 } }), timer, min,
       h('button', { class: 'btn ghost', onclick: () => stop(), 'aria-label': '结束挑战' }, '✕')),
     storyLine,
     levers,
     list,
     effort,
+    shareBox,
     h('div', { class: 'tracker-foot' },
       nextBtn,
-      h('button', { class: 'btn', onclick: () => app.activeChallenge && startChallenge(app, { ...app.activeChallenge, completed: false }) }, '重来'),
+      shareBtn,
+      h('button', { class: 'btn', onclick: () => app.activeChallenge && startChallenge(app, { ...app.activeChallenge, completed: false, result: null }) }, '重来'),
       h('button', { class: 'btn ghost', onclick: () => app.go('play') }, '挑战页'),
+      stamp,
     ),
-    stamp,
   );
   let done = false;
-  function show() { done = false; el.hidden = false; el.classList.remove('mini'); update(); }
+  function show() {
+    done = false; el.hidden = false; el.classList.remove('mini'); shareBox.hidden = true;
+    clearInterval(tick);
+    tick = app.activeChallenge?.mission ? setInterval(drawTimer, 1000) : null;
+    update();
+  }
   function stop() {
     const ch = app.activeChallenge;
     if (ch?.mission && !ch.completed) { const m0 = mload(); if (m0.streak) { m0.streak = 0; save(MSTORE, m0); app.flash('放弃了这一题，连胜中断'); } }
-    app.activeChallenge = null; el.hidden = true; app.go('play');
+    app.activeChallenge = null; el.hidden = true; drawTimer(); app.go('play');
   }
   function update() {
     const ch = app.activeChallenge;
@@ -122,6 +150,8 @@ export function createTracker(app) {
     effort.innerHTML = `动了 <b>${moved}</b> 个旋钮（参考解 ${ref} 个）${outside.length ? ` · <span class="down">动了规定外的：${esc(outside.map((k) => app.sim.spec(k)?.label ?? k).slice(0, 2).join('、'))}</span>` : ''}${all ? ` · <span class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>` : ''}`;
     stamp.hidden = !all;
     nextBtn.hidden = !(ch.mission && all);
+    shareBtn.hidden = !(ch.mission && ch.result);
+    drawTimer();
     if (all && !done) {
       done = true;
       if (ch.mission) {
@@ -129,14 +159,17 @@ export function createTracker(app) {
           ch.completed = true;
           const m0 = mload();
           m0.streak += 1;
+          ch.result = { stars, secs: elapsed(), moved, ref, streak: m0.streak };
+          shareBtn.hidden = false;
+          drawTimer();
           m0.best = Math.max(m0.best, m0.streak);
           m0.done += 1;
           save(MSTORE, m0);
           tag.textContent = `随机任务 · 连胜 ${m0.streak}`;
-          app.flash(`完成！${'★'.repeat(stars)} 连胜 ${m0.streak}${m0.streak === m0.best && m0.streak > 1 ? '（新纪录）' : ''}`);
+          app.flash(`完成！${'★'.repeat(stars)} 用时 ${fmtSecs(ch.result.secs)} · 连胜 ${m0.streak}${m0.streak === m0.best && m0.streak > 1 ? '（新纪录）' : ''}`);
           if (ch.daily) m0.daily = { date: ch.daily, stars: Math.max(stars, m0.daily?.date === ch.daily ? m0.daily.stars : 0) };
           save(MSTORE, m0);
-          app.track?.('mission', { stars, streak: m0.streak });
+          app.track?.('mission', { stars, streak: m0.streak, secs: ch.result.secs });
           app.celebrate?.();
         }
       } else {

@@ -24,6 +24,8 @@ export const ACHIEVEMENTS = [
   { id: 'quizzer', icon: '🧠', title: '直觉在线', desc: '先猜后算答对 8 题', hint: '挑战页下方的测验', stat: (s) => (s.quiz?.length ?? 0) >= 8 },
   { id: 'streak3', icon: '🔥', title: '连胜三场', desc: '随机任务连胜 3 次', hint: '挑战页"随机任务"', stat: (s) => s.bestStreak >= 3 },
   { id: 'streak10', icon: '🌋', title: '十连胜', desc: '随机任务连胜 10 次', hint: '别放弃任何一题', stat: (s) => s.bestStreak >= 10 },
+  { id: 'lightning', icon: '⚡', title: '闪电手', desc: '30 秒内完成一道随机任务', hint: '任务卡上有计时；点"可以动"里的旋钮名直接开滑杆', stat: (s) => s.fast >= 1 },
+  { id: 'show-off', icon: '📣', title: '晒战绩', desc: '复制过一次任务战绩', hint: '完成随机任务或今日任务后点"晒战绩"', stat: (s) => s.share >= 1 },
   // 极端玩法（看数值）
   { id: 'big-spender', icon: '💸', title: '大手笔', desc: '把 2026 年赤字率推到 6% 以上', hint: '积极财政，积极到底', state: (v) => v.drate26 >= 0.06 },
   { id: 'hawk', icon: '🦅', title: '铁公鸡', desc: '把 2026 年赤字率压到 2% 以下', hint: '紧缩到极致', state: (v) => v.drate26 <= 0.02 },
@@ -36,8 +38,8 @@ export const COUNTS = { challenges: 8 };
 
 /**
  * 把一个界面事件记入统计。事件名与 stat 读取的字段一一对应：
- * set（拧旋钮）、card（开卡片）、mode（换规则）、story、quiz、challenge、mission、
- * finder、history、replay、paths、phase、solve2、shapley 等计数类事件。
+ * set（拧旋钮）、card（开卡片）、mode（换规则）、story、quiz、challenge、mission（含用时 secs）、
+ * finder、history、replay、paths、phase、solve2、shapley、share 等计数类事件。
  */
 export function recordEvent(stats, ev, payload) {
   const s = stats;
@@ -54,6 +56,7 @@ export function recordEvent(stats, ev, payload) {
       s.missions = (s.missions ?? 0) + 1;
       s.bestStreak = Math.max(s.bestStreak ?? 0, payload.streak ?? 0);
       if (payload.stars === 3) s.threeStars = (s.threeStars ?? 0) + 1;
+      if (payload.secs != null && payload.secs <= 30) s.fast = (s.fast ?? 0) + 1;
       break;
     default: s[ev] = (s[ev] ?? 0) + 1;
   }

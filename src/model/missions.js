@@ -62,6 +62,24 @@ function applyChanges(sim, changes) {
 }
 
 const CMP_TEXT = { '<=': '不超过', '>=': '不低于', '==': '等于' };
+const LEVEL_NAME = { 1: '入门', 2: '进阶', 3: '高手' };
+
+/** 用时：59 秒以内写"42 秒"，否则写"1 分 05 秒" */
+export function fmtSecs(s) {
+  return s < 60 ? `${s} 秒` : `${Math.floor(s / 60)} 分 ${String(s % 60).padStart(2, '0')} 秒`;
+}
+
+/** 完成任务后可复制的战绩（今日任务同一天人人同题，可以直接比） */
+export function shareText(m, r) {
+  const head = m.daily ? `中国财政沙盘 · 今日任务 ${m.daily}` : `中国财政沙盘 · 随机任务（${LEVEL_NAME[m.level] ?? ''}）`;
+  const stars = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
+  return [
+    head,
+    m.title.replace(/^📅 今日任务 · /, ''),
+    `${stars} · 用时 ${fmtSecs(r.secs)} · 动了 ${r.moved} 个旋钮（参考解 ${r.ref} 个）${r.streak > 1 ? ` · 连胜 ${r.streak}` : ''}`,
+    ...m.goals.map((g) => `🟩 ${g.text}`),
+  ].join('\n');
+}
 
 /** 生成一道任务。返回与挑战关卡同构的对象；失败（极少）时返回 null */
 export function makeMission({ seed = Date.now(), level = null, template = null } = {}) {

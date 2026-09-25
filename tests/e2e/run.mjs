@@ -710,6 +710,36 @@ await t('今日任务：同一天两次开出同一道题；任务卡的旋钮�
   await page.close();
 });
 
+await t('晒战绩：任务卡计时、完成后计时冻结；剪贴板被拒时摆出战绩文字；解锁"闪电手"和"晒战绩"', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#play', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} __fiscal.achievements.reset(); Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('denied')) } }); });
+  await page.locator('#daily-go').click();
+  await page.waitForTimeout(1200);
+  assert.match(await page.locator('.tr-timer').innerText(), /⏱ \d+ 秒/);
+  assert.ok(!(await page.locator('#share-go').isVisible()), '完成前不显示"晒战绩"');
+  const sol = await page.evaluate(() => __fiscal.activeChallenge.solution);
+  await page.evaluate((s) => __fiscal.setMany(Object.fromEntries(s.map((c) => [c.id, c.set]))), sol);
+  await page.waitForTimeout(300);
+  const t1 = await page.locator('.tr-timer').innerText();
+  await page.waitForTimeout(1300);
+  assert.equal(await page.locator('.tr-timer').innerText(), t1, '完成后计时应停住');
+  await page.locator('#share-go').click();
+  await page.waitForTimeout(200);
+  const text = await page.locator('.share-box').inputValue();
+  assert.match(text, /^中国财政沙盘 · 今日任务 \d{4}-\d{2}-\d{2}\n/);
+  assert.match(text, /★★★ · 用时 \d+ 秒/);
+  assert.match(text, /\n🟩 /);
+  const got = await page.evaluate(() => JSON.parse(localStorage.getItem('fiscal-sandbox-achievements-v1')).unlocked);
+  assert.ok(got.includes('lightning') && got.includes('show-off'), got.join(','));
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.waitForTimeout(150);
+  const r = await page.evaluate(() => { const b = document.querySelector('.tracker').getBoundingClientRect(); return [b.left, b.right, innerWidth]; });
+  assert.ok(r[0] >= 0 && r[1] <= r[2], `320 px 下任务卡越界：${r}`);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

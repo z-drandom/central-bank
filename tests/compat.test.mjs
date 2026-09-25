@@ -30,3 +30,35 @@ test('相图配色不支持 color-mix 时有降级样式', async () => {
   const css = await readFile('src/styles.css', 'utf8');
   assert.match(css, /@supports not \(color: color-mix/);
 });
+
+// 注意：含 var() 的声明在解析时一律当作有效，到计算时才失效并回到初始值（透明），
+// 所以"同一条规则里先写纯色、再写 color-mix"兜不住，必须放进 @supports 降级块。
+test('每一处 color-mix 都在 @supports 降级块里有同选择器、同属性的纯色兜底', async () => {
+  const css = (await readFile('src/styles.css', 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
+  const sup = css.indexOf('@supports not (color: color-mix');
+  const end = css.indexOf('\n}', sup);
+  const covered = new Set();
+  const bad = [];
+  const norm = (p) => (p === 'background-color' ? 'background' : p);
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const inSup = m.index > sup && m.index < end;
+    const sels = m[1].replace(/^[\s\S]*@supports[^{]*\{/, '').split(',').map((s) => s.trim().replace(/\s+/g, ' '));
+    for (const d of m[2].split(';')) {
+      const p = /^\s*([\w-]+)\s*:\s*([\s\S]*)$/.exec(d);
+      if (!p) continue;
+      if (inSup) { if (!/color-mix/.test(p[2])) sels.forEach((s) => covered.add(`${s}|${norm(p[1])}`)); }
+      else if (/color-mix/.test(p[2])) sels.forEach((s) => bad.push(`${s}|${norm(p[1])}`));
+    }
+  }
+  assert.ok(bad.length >= 30, `应扫描到全部 color-mix 声明，实际 ${bad.length}`);
+  assert.deepEqual(bad.filter((k) => !covered.has(k)), []);
+});
+
+test('脚本里拼的 color-mix 内联样式先检测浏览器支持', async () => {
+  const bad = [];
+  for (const f of await files('src')) {
+    const src = await readFile(f, 'utf8');
+    if (/color-mix\(/.test(src) && !/CSS\.supports\([^)]*color-mix/.test(src)) bad.push(f);
+  }
+  assert.deepEqual(bad, []);
+});

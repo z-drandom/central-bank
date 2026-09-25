@@ -164,6 +164,7 @@ export default function projection(app) {
         { label: '低增长：名义增速 3%', changes: [{ id: 'pg', set: 0.03 }] },
         { label: '赤字率降到 3%', changes: [{ id: 'pdr', set: 0.03 }] },
         { label: '利率上行 1 个百分点', changes: [{ id: 'pshift', set: 0.01 }] },
+        { label: '利率上行 + 快速重定价', modes: { proj: 'spend' }, changes: [{ id: 'pshift', set: 0.01 }, { id: 'pphi', set: 0.5 }], note: '支出增速不变规则下，利率 +1 个百分点，存量债务每年一半换成新利率' },
         { label: '继续化债：每年置换 1 万亿', changes: [{ id: 'pswap', set: 10000 }] },
         { label: '专项债减半', changes: [{ id: 'psp', set: 22000 }] },
         { label: '紧支出：非付息支出增速 3%', modes: { proj: 'spend' }, changes: [{ id: 'pge', set: 0.03 }] },

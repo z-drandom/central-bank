@@ -52,7 +52,7 @@ test('对照组没有交互项；乘积关系有交互项', () => {
   };
   const add = run(byId.add);
   assert.ok(add.corners.share < 1e-9, `对照组交互占比 ${add.corners.share}`);
-  for (const id of ['oth', 'vat', 'int', 'soe', 'dg']) {
+  for (const id of ['oth', 'vat', 'int', 'soe', 'dg', 'reprice']) {
     const r = run(byId[id]);
     assert.ok(r.corners.share > 0.005, `${id} 交互占比 ${r.corners.share}`);
   }

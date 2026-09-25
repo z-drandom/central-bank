@@ -472,7 +472,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 .story li::before { counter-increment: s; content: counter(s); font: 700 13px/24px var(--f-display); width: 24px; height: 24px; border-radius: 50%; background: var(--surface-3); text-align: center; }
 
 /* 挑战 */
-.play-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.play-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; }
 .ch-card { display: grid; gap: 8px; align-content: start; position: relative; }
 .ch-card h4 { margin: 0; font: 700 16px/1.3 var(--f-display); }
 .ch-card .lvl { font-size: 11px; color: var(--ink-3); letter-spacing: 0.08em; }
@@ -662,7 +662,7 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .nar-dots i { flex: 1; height: 3px; border-radius: 2px; background: var(--surface-3); }
 .nar-dots i.done { background: var(--xfer-soft); }
 .nar-dots i.on { background: var(--xfer); }
-.story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px; }
 .story-card { border: 1px solid var(--rule); border-radius: var(--r); padding: 12px; display: grid; gap: 6px; align-content: start; background: var(--surface-2); }
 .story-card b { font: 700 15px var(--f-display); }
 .story-card p { margin: 0; font-size: 13px; color: var(--ink-2); }
@@ -686,7 +686,7 @@ g[data-sk]:focus-visible .t-name { fill: var(--focus); text-decoration: underlin
 .ledger-legend { font-size: 12px; color: var(--ink-3); display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
 .ledger-legend i { display: inline-block; font-style: normal; font-size: 10px; width: 15px; height: 15px; line-height: 15px; text-align: center; border-radius: 50%; border: 1px solid var(--rule-strong); margin-right: 4px; }
 .ledger-legend i.p { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
 .gloss-item { border: 1px solid var(--rule); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
 .gloss-t { display: flex; gap: 8px; align-items: baseline; }
 .gloss-t b { font: 700 15px var(--f-display); }
@@ -808,7 +808,7 @@ kbd { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--rule-
 td[data-pair]:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 /* 总览：问题导航 */
-.ask-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.ask-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 10px; }
 .ask-card { border: 1px solid var(--rule); border-radius: var(--r); padding: 12px; display: grid; gap: 6px; align-content: start; }
 .ask-card b { font: 700 14.5px var(--f-display); }
 .ask-card p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.6; }

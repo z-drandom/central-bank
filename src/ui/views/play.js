@@ -219,13 +219,15 @@ export default function play(app) {
   const wallBox = h('div');
   const wallTitle = h('small', {});
   const wallSheet = h('div', { class: 'sheet', id: 'badges' }, h('h3', {}, '🏅 成就墙', wallTitle), wallBox);
-  function renderWall() {
+  let wallCount = -1;
+  function renderWall(force = false) {
     const a = app.achievements;
-    if (!a) return;
+    if (!a || (!force && a.count === wallCount)) return; // 成就墙只在解锁数变化时重建
+    wallCount = a.count;
     wallTitle.textContent = `已解锁 ${a.count} / ${a.total}；灰色的鼠标移上去看怎么解锁`;
     wallBox.replaceChildren(a.wall());
   }
-  app.achievements?.onChange(() => { renderWall(); renderRank(); });
+  app.achievements?.onChange(() => { renderWall(true); renderRank(); });
   app.startMission = (lv) => startMission(app, lv);
   const el = h('div', {},
     rank,

@@ -53,3 +53,17 @@ test('Shapley：参数太多时退化为单独效果 + 交互余项', () => {
   assert.ok(r.rows.every((x) => x.phi == null));
   assert.ok(close(r.sumAlone + r.interaction, r.total));
 });
+
+test('Shapley：改动参数超过 31 个时总变化和单独效果仍正确（不再受 32 位掩码限制）', () => {
+  const sim = new Sim();
+  const up = new Set(sim.graph.upstream('p_iball_2028'));
+  const ids = sim.graph.inputs().filter((n) => up.has(n.id) && !n.fixed && n.base !== 0).map((n) => n.id);
+  assert.ok(ids.length > 32, `上游参数 ${ids.length} 个`);
+  sim.setMany(Object.fromEntries(ids.map((id) => [id, sim.inputs[id] * 1.02])));
+  const r = shapley(sim.graph, sim.inputs, 'p_iball_2028');
+  assert.equal(r.exact, false);
+  assert.ok(close(r.total, sim.values.p_iball_2028 - sim.base.p_iball_2028), `${r.total} vs ${sim.values.p_iball_2028 - sim.base.p_iball_2028}`);
+  const last = r.ids[r.ids.length - 1];
+  const direct = sim.graph.compute({ ...sim.graph.baseInputs(), [last]: sim.inputs[last] }).p_iball_2028 - sim.base.p_iball_2028;
+  assert.ok(close(r.rows.find((x) => x.id === last).alone, direct), '第 32 个以后的参数单独效果');
+});

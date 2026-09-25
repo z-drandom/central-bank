@@ -19,26 +19,35 @@ export function shapley(graph, inputs, target, { maxExact = 10 } = {}) {
   const f = graph.evaluator(target);
   const base = {};
   for (const node of graph.inputs()) base[node.id] = node.base;
+  // 只改 on 里这些参数（其余取基线）时的目标值
+  const at = (on) => {
+    const inp = { ...base };
+    for (const i of on) inp[ids[i]] = inputs[ids[i]];
+    return f(inp);
+  };
+  const all = ids.map((_, i) => i);
+  const v0 = at([]);
+  const vAll = at(all);
+  const total = vAll - v0;
+  const alone = ids.map((_, i) => at([i]) - v0);
+  const sumAlone = alone.reduce((a, b) => a + b, 0);
+  // 精确 Shapley 需要 2ⁿ 个组合，只在 n ≤ maxExact（≤ 20，位掩码安全）时计算
   const cache = new Map();
   const v = (mask) => {
     if (cache.has(mask)) return cache.get(mask);
-    const inp = { ...base };
-    for (let i = 0; i < n; i++) if (mask & (1 << i)) inp[ids[i]] = inputs[ids[i]];
-    const r = f(inp);
+    const on = [];
+    for (let i = 0; i < n; i++) if (mask & (1 << i)) on.push(i);
+    const r = at(on);
     cache.set(mask, r);
     return r;
   };
-  const full = (1 << n) - 1;
-  const v0 = v(0);
-  const total = v(full) - v0;
-  const alone = ids.map((_, i) => v(1 << i) - v0);
-  const sumAlone = alone.reduce((a, b) => a + b, 0);
   let phi = null;
-  if (n <= maxExact) {
+  if (n <= Math.min(maxExact, 20)) {
     // 权重 |S|!(n−|S|−1)!/n!
     const fact = [1];
     for (let k = 1; k <= n; k++) fact[k] = fact[k - 1] * k;
     phi = ids.map(() => 0);
+    const full = (1 << n) - 1;
     for (let mask = 0; mask <= full; mask++) {
       let size = 0;
       for (let m = mask; m; m &= m - 1) size++;
@@ -52,5 +61,5 @@ export function shapley(graph, inputs, target, { maxExact = 10 } = {}) {
   }
   const rows = ids.map((id, i) => ({ id, alone: alone[i], phi: phi ? phi[i] : null }))
     .sort((a, b) => Math.abs(b.phi ?? b.alone) - Math.abs(a.phi ?? a.alone));
-  return { ids, total, v0, vAll: v(full), rows, sumAlone, interaction: total - sumAlone, exact: !!phi, evals: cache.size };
+  return { ids, total, v0, vAll, rows, sumAlone, interaction: total - sumAlone, exact: !!phi, evals: cache.size + n + 2 };
 }

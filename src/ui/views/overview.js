@@ -85,7 +85,11 @@ export function propagationSteps(app) {
     const m = sim.spec(st.tos[0]).mod;
     firstIn.set(m, Math.min(firstIn.get(m) ?? Infinity, st.r));
   }
-  for (const st of out) if (st.kind === 'cl' && firstIn.has(st.c.id) && st.r <= firstIn.get(st.c.id)) st.r = firstIn.get(st.c.id) + 0.1;
+  // 但含有你改动的参数的方框是起点，保持原位（否则会排到它自己发出的箭头后面）
+  for (const st of out) {
+    if (st.kind !== 'cl' || st.ids.some((id) => sim.isInput(id))) continue;
+    if (firstIn.has(st.c.id) && st.r <= firstIn.get(st.c.id)) st.r = firstIn.get(st.c.id) + 0.1;
+  }
   out.sort((a, b) => a.r - b.r);
   return out;
 }

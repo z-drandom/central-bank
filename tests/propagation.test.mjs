@@ -13,6 +13,8 @@ test('传导回放：箭头排在起点方框之后、终点方框之前', () =>
     [{ y25: 'transfer' }, { nontax: 30000 }],
     [{}, { f4_exp: 10 }],
     [{}, { dr26: 0.05, g_nom: 0.03 }],
+    [{ c26: 'spend' }, { rcg: 0.03 }],
+    [{ c26: 'spend' }, { t_vat: 60000, rcg: 0.025 }],
   ];
   for (const [modes, inp] of cases) {
     const sim = new Sim(modes);
@@ -24,7 +26,8 @@ test('传导回放：箭头排在起点方框之后、终点方框之前', () =>
       if (st.kind !== 'ln' || !st.tos.length) return;
       const dest = sim.spec(st.tos[0]).mod;
       const firstIn = steps.findIndex((x) => x.kind === 'ln' && x.tos.length && sim.spec(x.tos[0]).mod === dest);
-      if (pos(dest) >= 0) assert.ok(pos(dest) > firstIn, `${JSON.stringify(inp)}: 第一条进入 ${dest} 的箭头应在它之前`);
+      const destIsSource = pos(dest) >= 0 && steps[pos(dest)].ids.some((id) => sim.isInput(id));
+      if (pos(dest) >= 0 && !destIsSource) assert.ok(pos(dest) > firstIn, `${JSON.stringify(inp)}: 第一条进入 ${dest} 的箭头应在它之前`);
       const srcMods = new Set(st.l.from.filter((id) => sim.has(id) && Math.abs(sim.values[id] - sim.base[id]) > 1e-9 * Math.max(1, Math.abs(sim.base[id]))).map((id) => sim.spec(id).mod));
       for (const m of srcMods) if (pos(m) >= 0 && m !== dest) assert.ok(pos(m) < i, `${JSON.stringify(inp)}: 起点 ${m} 应在箭头 ${st.l.label} 之前`);
     });

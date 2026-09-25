@@ -37,6 +37,7 @@ const text = (page, sel) => page.locator(sel).first().innerText();
 await t('每个标签页都能打开且无脚本错误', async () => {
   const page = await newPage();
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await page.locator('#mode-thick').click(); // 默认进"读薄"，标签栏在"读厚"里
   const tabs = await page.locator('.tab').count();
   assert.equal(tabs, 9);
   for (let i = 0; i < tabs; i++) {
@@ -617,6 +618,60 @@ await t('极值：所有参数同时取下限/上限，各页无 Infinity/NaN �
   await page.evaluate(() => { const s = {}; for (const n of __fiscal.sim.graph.inputs()) if (!n.fixed && n.range) s[n.id] = n.range[0]; __fiscal.setMany(s); __fiscal.go('b26'); });
   await page.waitForTimeout(400);
   assert.match(await page.locator('#changes').innerText(), /收入被调到了 0/, '收入为 0 时应给出提示');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
+await t('读薄：默认进入，只露三道题；猜完出现一句话、旋钮与公式；三题都猜完出现总结；读厚/读薄来回切换', async () => {
+  const page = await newPage();
+  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} __fiscal.achievements.reset(); });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => location.hash), '#thin');
+  assert.ok(!(await page.locator('.kpis').isVisible()), '读薄时不显示顶栏指标');
+  assert.ok(!(await page.locator('.tabs').isVisible()), '读薄时不显示标签栏');
+  assert.equal(await page.locator('.lesson:not(.sum)').count(), 3);
+  assert.equal(await page.locator('.ls-body:visible').count(), 0, '猜之前不露答案');
+  // ① 猜"不变"（错），出现正确答案、标题、旋钮
+  await page.locator('#ls-ruler .ls-opt', { hasText: '不变' }).click();
+  assert.match(await page.locator('#ls-ruler .ls-verdict').innerText(), /其实是「变少」/);
+  assert.match(await page.locator('#ls-ruler h3').innerText(), /尺子/);
+  const say0 = await page.locator('#ls-ruler .ls-say').innerText();
+  await page.locator('#ls-ruler .ls-chips .chip', { hasText: '试试' }).click();
+  const say1 = await page.locator('#ls-ruler .ls-say').innerText();
+  assert.notEqual(say1, say0);
+  assert.match(say1, /少 1,122 亿/);
+  assert.match(await page.locator('#ls-ruler .ls-fx').innerText(), /赤字 = 赤字率 × 名义 GDP/);
+  // 旋钮只动这一课的模型副本，不动完整模型
+  assert.equal(await page.evaluate(() => __fiscal.v.g_nom), 0.05);
+  // 拖滑杆
+  await page.locator('#ls-endpoint .ls-opt', { hasText: '涨到某个水平就停下' }).click();
+  await page.locator('#ls-endpoint input[type=range]').fill('0.02');
+  assert.match(await page.locator('#ls-endpoint .ls-nums').innerText(), /332%/);
+  assert.match(await page.locator('#ls-endpoint .ep-chart').innerHTML(), /终点 332%/);
+  assert.match(await page.locator('#ls-sum').innerText(), /还剩 1 句/);
+  await page.locator('#ls-iceberg .ls-opt', { hasText: '约 12 万亿' }).click();
+  assert.match(await page.locator('#ls-iceberg .ls-verdict').innerText(), /猜对了/);
+  assert.match(await page.locator('#ls-iceberg .ls-say').innerText(), /12\.29 万亿/);
+  assert.match(await page.locator('#ls-sum').innerText(), /先看水面下，再看分母/);
+  assert.match(await page.locator('#ls-sum').innerText(), /三题猜对 2 题/);
+  await page.waitForTimeout(150);
+  const got = await page.evaluate(() => JSON.parse(localStorage.getItem('fiscal-sandbox-achievements-v1')).unlocked);
+  assert.ok(got.includes('thin'), got.join(','));
+  // 在完整模型里看：把这一课的旋钮值带进完整模型，并切到"读厚"
+  await page.locator('#ls-endpoint .ls-foot .btn').click();
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => location.hash), '#proj');
+  assert.ok(await page.locator('.tabs').isVisible());
+  assert.equal(await page.evaluate(() => __fiscal.v.pg), 0.02);
+  // 刷新后答案还在；读薄/读厚来回切
+  await page.locator('#mode-thin').click();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('.ls-body:visible').count(), 3);
+  await page.locator('#mode-thick').click();
+  assert.equal(await page.evaluate(() => location.hash), '#proj', '读厚回到上次看的页');
   assert.deepEqual(page.errors, []);
   await page.close();
 });

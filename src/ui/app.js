@@ -3,7 +3,7 @@ import { Sim } from '../model/sim.js';
 import { fmt } from '../model/format.js';
 import { MODE_OPTIONS } from '../model/specs.js';
 import { changed } from '../engine/graph.js';
-import { h } from './dom.js';
+import { h, load, save } from './dom.js';
 import { createPanel } from './controls.js';
 import { createCard } from './card.js';
 import { createChanges } from './changes.js';
@@ -154,11 +154,19 @@ export function createApp(root) {
   }
   const histBtn = h('button', { class: 'btn ghost', onclick: () => openHist(), title: '最近走过的状态', 'aria-label': '历史' }, '☰ 历史');
   const tabBar = h('nav', { class: 'tabs', role: 'tablist', 'aria-label': '模块' });
+  // 读薄 / 读厚：先给三个旋钮，完整模型一键展开
+  const nKnobs = sim.graph.inputs().filter((n) => !n.fixed && n.range).length;
+  const thinBtn = h('button', { type: 'button', id: 'mode-thin', onclick: () => go('thin') }, '读薄', h('small', {}, ' 3 个旋钮'));
+  const thickBtn = h('button', { type: 'button', id: 'mode-thick', onclick: () => go(lastThick) }, '读厚', h('small', {}, ` ${nKnobs} 个旋钮`));
+  const modeSeg = h('div', { class: 'seg mode-seg', role: 'group', 'aria-label': '读薄还是读厚' }, thinBtn, thickBtn);
+  const LAST_THICK = 'fiscal-sandbox-last-tab-v1';
+  let lastThick = load(LAST_THICK, 'overview');
   const toast = h('div', { role: 'status', 'aria-live': 'polite', style: { position: 'fixed', left: '50%', bottom: '24px', transform: 'translateX(-50%)', background: 'var(--ink)', color: 'var(--paper)', padding: '8px 14px', borderRadius: '6px', fontSize: '13px', zIndex: 60, opacity: 0, transition: 'opacity .2s', pointerEvents: 'none' } });
   const top = h('header', { class: 'top' },
     h('div', { class: 'brand' },
       h('h1', {}, h('span', { class: 'seal', 'aria-hidden': 'true' }, '財'), '中国财政沙盘'),
-      h('p', {}, '把四张财政图接成一台机器：拧任何一个旋钮，都能看到它沿公式传到哪里'),
+      modeSeg,
+      h('p', {}, '拧一个旋钮，看它沿公式传到哪里'),
       h('span', { class: 'spacer' }),
       h('div', { class: 'actions' },
         h('button', { class: 'btn ghost', onclick: () => finder.open(), title: '查找任何数字（/ 或 Ctrl+K）', 'aria-label': '查找数字' }, '⌕ 查找'),
@@ -246,6 +254,7 @@ export function createApp(root) {
   const tabs = new Map();
   for (const v of views) {
     const badge = h('span', { class: 'badge', hidden: true });
+    if (v.thin) { tabs.set(v.id, { btn: h('button'), badge, view: v, panel: null, wrap: null }); continue; }
     const b = h('button', { class: 'tab', role: 'tab', type: 'button', 'aria-selected': 'false', id: `tab-${v.id}`, onclick: () => go(v.id) },
       v.img ? h('span', { class: 'img' }, `图${v.img}`) : null, v.title, badge);
     tabBar.append(b);
@@ -254,7 +263,7 @@ export function createApp(root) {
 
   tabBar.addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    const ids = [...tabs.keys()];
+    const ids = [...tabs.keys()].filter((k) => !tabs.get(k).view.thin);
     const i = ids.indexOf(current);
     const next = ids[(i + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length];
     go(next);
@@ -266,13 +275,15 @@ export function createApp(root) {
     const t = tabs.get(id);
     if (!t.wrap) {
       const v = t.view;
-      const head = h('div', { class: 'view-head' },
+      const head = v.bare ? null : h('div', { class: 'view-head' },
         h('div', { class: 'grow' }, h('h2', {}, v.heading ?? v.title), v.lead ? h('p', { html: v.lead }) : null),
       );
       if (v.panelConfig) {
         t.panel = createPanel(app, v.panelConfig);
         t.wrap = h('section', { class: 'view', role: 'tabpanel', 'aria-labelledby': `tab-${id}` }, head,
           h('div', { class: 'layout' }, h('div', { class: 'main-col' }, v.el), t.panel.el));
+      } else if (v.bare) {
+        t.wrap = h('section', { class: 'view', 'aria-label': v.title }, v.el); // 读薄没有对应的标签
       } else {
         t.wrap = h('section', { class: 'view', role: 'tabpanel', 'aria-labelledby': `tab-${id}` }, head, v.el);
       }
@@ -283,6 +294,11 @@ export function createApp(root) {
   function go(id) {
     if (!tabs.has(id)) id = views[0].id;
     current = id;
+    const isThin = !!tabs.get(id).view.thin;
+    if (!isThin && lastThick !== id) { lastThick = id; save(LAST_THICK, id); }
+    document.documentElement.classList.toggle('mode-thin', isThin);
+    thinBtn.setAttribute('aria-pressed', String(isThin));
+    thickBtn.setAttribute('aria-pressed', String(!isThin));
     for (const [k, t] of tabs) {
       t.btn.setAttribute('aria-selected', String(k === id));
       t.btn.tabIndex = k === id ? 0 : -1;
@@ -406,6 +422,7 @@ export function createApp(root) {
     if (e.shiftKey) app.redo(); else app.undo();
   });
 
+  if (!tabs.has(lastThick) || tabs.get(lastThick).view.thin) lastThick = 'overview';
   let start = views[0].id;
   try {
     const hid = location.hash.slice(1);

@@ -1,3 +1,4 @@
+import thin from './thin.js';
 import overview from './overview.js';
 import exec25 from './exec25.js';
 import budget26 from './budget26.js';
@@ -8,4 +9,4 @@ import sensitivity from './sensitivity.js';
 import play from './play.js';
 import handbook from './handbook.js';
 
-export const VIEWS = [overview, exec25, budget26, debt, fourbooks, projection, sensitivity, play, handbook];
+export const VIEWS = [thin, overview, exec25, budget26, debt, fourbooks, projection, sensitivity, play, handbook];

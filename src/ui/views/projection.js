@@ -129,8 +129,8 @@ export default function projection(app) {
     });
     const dstar = v.p_dstar;
     const dsText = dstar > 0 && Number.isFinite(dstar)
-      ? `按 2035 年的状态一直走下去，政府负债率最终收敛到 <b data-node="p_dstar" style="cursor:pointer;border-bottom:1px dotted">${(dstar * 100).toFixed(1)}%</b>（公式 d* = (pd + sf)·(1 + g)/(g − r)，点开看代入）。`
-      : '按 2035 年的状态，有效利率不低于增速，负债率不会收敛。';
+      ? `按 2035 年的状态一直走下去，政府负债率最终收敛到 <b data-node="p_dstar" style="cursor:pointer;border-bottom:1px dotted">${(dstar * 100).toFixed(1)}%</b>（公式 ${app.sim.modes.proj === 'rate' ? 'd* = (δ + sf)·(1 + g)/g' : 'd* = (pd + sf)·(1 + g)/(g − r)'}，点开看代入）。`
+      : app.sim.modes.proj === 'rate' ? '名义增速不为正，负债率不会收敛。' : '按 2035 年的状态，有效利率不低于增速，负债率不会收敛。';
     ruleHint.innerHTML = dsText + ' ' + (app.sim.modes.proj === 'rate'
       ? '当前规则是<b>赤字率不变</b>：利率上升不会让负债率更高，而是让付息挤占非付息支出（见下方"非付息支出占 GDP"）。想看利率推高负债率，把推演规则切到"支出增速不变"。'
       : '当前规则是<b>支出增速不变</b>：付息增加直接变成更大的赤字，负债率随之上升。');

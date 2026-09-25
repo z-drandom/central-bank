@@ -5,6 +5,7 @@
 
 export const ACHIEVEMENTS = [
   // 入门
+  { id: 'thin', icon: '💡', title: '一语点醒', desc: '读完"读薄"的三句话', hint: '顶栏"读薄"：先猜，再拧', stat: (s) => (s.thin?.length ?? 0) >= 3 },
   { id: 'first-turn', icon: '🔧', title: '初次上手', desc: '第一次拧动旋钮', hint: '拖任意一个滑杆', stat: (s) => s.set >= 1 },
   { id: 'curious', icon: '🔍', title: '刨根问底', desc: '打开过 20 张公式卡片', hint: '点数字看公式', stat: (s) => s.card >= 20 },
   { id: 'rules', icon: '⚖️', title: '规则玩家', desc: '试过 5 种不同的平衡规则', hint: '在参数面板切换"平衡规则"', stat: (s) => (s.modes?.length ?? 0) >= 5 },
@@ -38,7 +39,7 @@ export const COUNTS = { challenges: 8 };
 
 /**
  * 把一个界面事件记入统计。事件名与 stat 读取的字段一一对应：
- * set（拧旋钮）、card（开卡片）、mode（换规则）、story、quiz、challenge、mission（含用时 secs）、
+ * set（拧旋钮）、card（开卡片）、mode（换规则）、story、thin（读薄的一课）、quiz、challenge、mission（含用时 secs）、
  * finder、history、replay、paths、phase、solve2、shapley、share 等计数类事件。
  */
 export function recordEvent(stats, ev, payload) {
@@ -47,6 +48,7 @@ export function recordEvent(stats, ev, payload) {
   switch (ev) {
     case 'mode': addTo('modes', payload); break;
     case 'story': addTo('stories', payload); break;
+    case 'thin': addTo('thin', payload); break;
     case 'quiz': addTo('quiz', payload); break;
     case 'challenge':
       addTo('challenges', payload.id);

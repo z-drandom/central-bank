@@ -161,11 +161,19 @@ test('图④的第一本账恒等式在 2025、2026 年同样成立', () => {
   close(v.f1_realdef - v.f1_def, v.f1_tin - v.f1_tostab, '2021');
 });
 
-test('长期收敛负债率：把 2035 年的状态固定下来迭代，负债率确实收敛到 d*', () => {
-  const sim = new Sim();
-  const v = sim.values;
-  const g = v.pg, r = v.p_r_2035, pd = v.p_pd_2035, sf = v.p_sfa_2035;
+test('长期收敛负债率：按各自推演规则把 2035 年的比率冻结下来迭代，负债率确实收敛到 d*', () => {
+  // 赤字率不变：付息在赤字里，d_t = d_{t−1}/(1 + g) + δ + sf，终点与利率无关
+  const a = new Sim({ proj: 'rate' });
+  let v = a.values;
   let d = v.p_d_2035;
-  for (let i = 0; i < 3000; i++) d = d * (1 + r) / (1 + g) + pd + sf;
-  close(d, v.p_dstar, 'd*');
+  for (let i = 0; i < 5000; i++) d = d / (1 + v.pg) + v.p_dr_2035 + v.p_sfa_2035;
+  close(d, v.p_dstar, 'd*（赤字率不变）');
+  a.set('pshift', 0.01);
+  close(a.values.p_dstar, v.p_dstar, '赤字率不变时，利率不改变终点');
+  // 支出增速不变：基本赤字率冻结，d_t = d_{t−1}(1 + r)/(1 + g) + pd + sf
+  const b = new Sim({ proj: 'spend' });
+  v = b.values;
+  d = v.p_d_2035;
+  for (let i = 0; i < 5000; i++) d = d * (1 + v.p_r_2035) / (1 + v.pg) + v.p_pd_2035 + v.p_sfa_2035;
+  close(d, v.p_dstar, 'd*（支出增速不变）');
 });

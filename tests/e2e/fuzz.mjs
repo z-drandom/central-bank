@@ -19,7 +19,7 @@ await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
 await page.goto(pathToFileURL(resolve('dist/index.html')).href, { waitUntil: 'domcontentloaded' });
 await page.evaluate(() => { navigator.clipboard.writeText = () => Promise.reject(new Error('no')); });
 
-const TABS = ['overview', 'y25', 'b26', 'debt', 'fb', 'proj', 'sens', 'play', 'book'];
+const TABS = ['thin', 'overview', 'y25', 'b26', 'debt', 'fb', 'proj', 'sens', 'play', 'book'];
 const log = [];
 for (let i = 0; i < STEPS; i++) {
   const r = rnd();

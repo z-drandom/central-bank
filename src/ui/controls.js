@@ -1,4 +1,5 @@
 // 参数面板：平衡规则开关 + 分组滑杆。每个滑杆标出原图基线位置（金色刻度）。
+import { LESSONS } from '../model/thin.js';
 import { h } from './dom.js';
 import { dispKind, fmt } from '../model/format.js';
 import { MODE_OPTIONS } from '../model/specs.js';
@@ -31,12 +32,15 @@ function rangeOf(spec) {
   return { lo: toDisp(spec, lo), hi: toDisp(spec, hi), step: toDisp(spec, step) };
 }
 
+const THIN_LEVERS = new Set(LESSONS.map((L) => L.lever.id));
+
 export function makeSlider(app, id, { compact = false, idPrefix = '' } = {}) {
   const spec = app.sim.spec(id);
   const r = rangeOf(spec);
   const baseD = toDisp(spec, spec.base);
   const wrap = h('div', { class: 'ctl', 'data-ctl': id });
-  const name = h('span', { class: 'ctl-name', title: '点击查看公式与来源', onclick: () => app.openCard(id) }, spec.label);
+  const star = THIN_LEVERS.has(id) ? h('span', { class: 'ctl-star', title: '"读薄"精选的三个旋钮之一' }, '★') : null;
+  const name = h('span', { class: 'ctl-name', title: '点击查看公式与来源', onclick: () => app.openCard(id) }, star, spec.label);
   const box = h('input', { class: 'ctl-val', type: 'text', inputmode: 'decimal', id: `${idPrefix}in-${id}`, 'aria-label': spec.label });
   const reset = h('button', { class: 'ctl-reset', title: '恢复原图数值', 'aria-label': `恢复 ${spec.label}`, onclick: () => app.set(id, spec.base) }, '↺');
   const range = h('input', { type: 'range', min: r.lo, max: r.hi, step: r.step, id: `${idPrefix}rg-${id}`, 'aria-label': spec.label });

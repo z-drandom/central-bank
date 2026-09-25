@@ -585,7 +585,7 @@ export function buildSpecs(modes = DEFAULT_MODES) {
   {
     const { list, inp, f } = makeBuilder('proj');
     const W = { disp: 'wy' };
-    inp('pg', 'g', '2027年后名义GDP增速', 0.045, { unit: 'pct', range: pctRange(0, 0.1), tag: 'assume' });
+    inp('pg', 'g', '2027年后名义GDP增速', 0.045, { unit: 'pct', range: pctRange(0.005, 0.1), tag: 'assume', note: '滑杆从 0.5% 起：赤字率不变时，增速为 0 的负债率没有终点（一直上升），长期收敛负债率的分母为 0。' });
     inp('peps', 'ε', '收入弹性', 1, { unit: 'num', range: [0, 2, 0.05], tag: 'assume', note: '收入增速 = ε × 名义 GDP 增速。' });
     inp('pdr', 'd^{*}', '推演期赤字率', 0.04, { unit: 'pct', range: pctRange(0, 0.1, 0.0005), tag: 'assume' });
     inp('pge', 'g_{E}', '非付息支出增速', 0.045, { unit: 'pct', range: pctRange(-0.05, 0.12), tag: 'assume' });
@@ -674,10 +674,18 @@ export function buildSpecs(modes = DEFAULT_MODES) {
       f(`p_sfa_${y}`, `sf_{${y}}`, `${y}年其他债务融资`, `(pstb + psp + p_sw_${y}) / p_Y_${y}`, { unit: 'pct', note: '专项债、特别国债和置换债不计入赤字，但增加显性债务。' });
     }
     const yl = PROJ_END;
-    f('p_dstar', 'd^{*}', '长期收敛负债率', `(p_pd_${yl} + p_sfa_${yl}) * (1 + pg) / (pg - p_r_${yl})`, {
-      unit: 'pct', kind: 'identity',
-      note: `若 ${yl} 年的基本赤字率、其他债务融资率、有效利率和名义增速一直保持不变，负债率最终会稳定在这个水平。由 Δd = d·(r − g)/(1 + g) + pd + sf 令 Δd = 0 解出。只有 g > r 时才收敛；g ≤ r 时公式给出负数或无穷，表示负债率会一直上升。`,
-    });
+    // 收敛点要跟推演规则一致：规则固定的是哪个比率，就把哪个比率冻结在 2035 年的水平
+    if (M.proj === 'rate') {
+      f('p_dstar', 'd^{*}', '长期收敛负债率', `(p_dr_${yl} + p_sfa_${yl}) * (1 + pg) / pg`, {
+        unit: 'pct', kind: 'identity',
+        note: `推演规则为"赤字率不变"：若 ${yl} 年以后赤字率、其他债务融资率（占 GDP）和名义增速一直不变，负债率最终会稳定在这个水平。由 d = d·1/(1 + g) + δ + sf 解出。付息已经包含在赤字里，所以利率不影响终点，只决定赤字里有多少被付息吃掉。分母是增速 g：g 越小，终点越高，g 趋于 0 时终点趋于无穷。`,
+      });
+    } else {
+      f('p_dstar', 'd^{*}', '长期收敛负债率', `(p_pd_${yl} + p_sfa_${yl}) * (1 + pg) / (pg - p_r_${yl})`, {
+        unit: 'pct', kind: 'identity',
+        note: `推演规则为"支出增速不变"：若 ${yl} 年的基本赤字率、其他债务融资率、有效利率和名义增速一直保持不变，负债率最终会稳定在这个水平。由 Δd = d·(r − g)/(1 + g) + pd + sf 令 Δd = 0 解出。只有 g > r 时才收敛；g ≤ r 时公式给出负数或无穷，表示负债率会一直上升。`,
+      });
+    }
     specs.push(...list);
   }
 

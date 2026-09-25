@@ -17,7 +17,8 @@ function labelBlock(app, n) {
   let growth = '';
   if (L.growthId && app.sim.has(L.growthId)) {
     const g = app.v[L.growthId];
-    growth = `${g >= 0 ? '▲' : '▼'}${(Math.abs(g) * 100).toFixed(1)}%`;
+    // 上年基数为 0 时增幅没有意义（除以零），不显示
+    if (Number.isFinite(g)) growth = `${g >= 0 ? '▲' : '▼'}${(Math.abs(g) * 100).toFixed(1)}%`;
   }
   const lines = [];
   if (L.inline) {

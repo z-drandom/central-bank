@@ -4,6 +4,7 @@ import { fmt } from '../model/format.js';
 const W = (id, when, text, level = 'warn') => ({ id, when, text, level });
 
 export const WARNINGS = [
+  W('rev25', (v) => !(v.rev25 > 0) || !(v.r26 > 0), () => '一般公共预算收入被调到了 0：所有"占收入比重"和"增速"都要除以收入，现在无法计算，显示为"—"。把任一税种或非税收入调回来即可恢复。'),
   W('oth26', (v) => v.oth26 < 0, (v, s) => `中央本级"其它"支出变成 ${fmt(s('oth26'), v.oth26)}：在"赤字率锚定"下，减收或增支已经超过"其它"能吸收的范围。可以提高赤字率、改用"支出锚定"，或把吸收项改为转移支付。`),
   W('kprop', (v) => v.kprop < 0.7, (v) => `本级支出分摊系数只有 ${(v.kprop * 100).toFixed(1)}%：各项支出都要按计划的这个比例执行，压减幅度已经很大。`),
   W('kprop', (v) => v.kprop > 1.3, (v) => `本级支出分摊系数达 ${(v.kprop * 100).toFixed(1)}%：各项都超计划安排，说明赤字或调入远超原计划需要。`, 'info'),

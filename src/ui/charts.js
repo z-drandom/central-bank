@@ -19,6 +19,11 @@ function niceTicks(lo, hi, n = 5) {
  * refs: [{ y, label }]
  */
 export function lineChart({ series, width = 640, height = 260, yFmt = (v) => `${(v * 100).toFixed(0)}%`, yMin, yMax, refs = [], title = '' }) {
+  // 除以零等情况会产生非有限值：这些点不画，整条线都无法计算时给出说明
+  const fin = (p) => Number.isFinite(p.y);
+  series = series.map((se) => ({ ...se, pts: se.pts.filter(fin), base: se.base?.filter(fin) })).filter((se) => se.pts.length);
+  refs = refs.filter((r) => Number.isFinite(r.y));
+  if (!series.length) return `<svg viewBox="0 0 ${width} 60" role="img" aria-label="${esc(title)}：无法计算"><text x="12" y="34" class="t-small">无法计算：分母为 0（例如收入被调到 0）</text></svg>`;
   const m = { l: 46, r: 96, t: 16, b: 26 };
   const W = width - m.l - m.r;
   const H = height - m.t - m.b;
@@ -46,24 +51,24 @@ export function lineChart({ series, width = 640, height = 260, yFmt = (v) => `${
   }
   const path = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`).join('');
   // 末端标签避让：按 y 排序后保证间距
-  const ends = series.map((se, i) => ({ i, y: Y(se.pts.at(-1).y) })).sort((a, b) => a.y - b.y);
+  const ends = series.map((se, i) => ({ i, y: Y(se.pts[se.pts.length - 1].y) })).sort((a, b) => a.y - b.y);
   for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 30) ends[k].y = ends[k - 1].y + 30;
   const endY = new Map(ends.map((e) => [e.i, e.y]));
   for (const [si, se] of series.entries()) {
-    if (se.base && se.base.some((p, i) => Math.abs(p.y - se.pts[i].y) > 1e-9)) {
+    if (se.base && se.base.length && se.base.some((p, i) => !se.pts[i] || Math.abs(p.y - se.pts[i].y) > 1e-9)) {
       s += `<path d="${path(se.base)}" fill="none" class="${se.cls}" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.55"/>`;
     }
     if (se.area) {
-      s += `<path d="${path(se.pts)}L${X(se.pts.at(-1).x)},${Y(Math.max(lo, 0))}L${X(se.pts[0].x)},${Y(Math.max(lo, 0))}Z" class="${se.cls.replace('stroke', 'fill')}" opacity="0.08"/>`;
+      s += `<path d="${path(se.pts)}L${X(se.pts[se.pts.length - 1].x)},${Y(Math.max(lo, 0))}L${X(se.pts[0].x)},${Y(Math.max(lo, 0))}Z" class="${se.cls.replace('stroke', 'fill')}" opacity="0.08"/>`;
     }
     s += `<path d="${path(se.pts)}" fill="none" class="${se.cls}" stroke-width="${se.thin ? 1.6 : 2.4}" stroke-linejoin="round"${se.thin ? ' stroke-dasharray="1 0"' : ''}/>`;
     if (se.thin) {
       // 对照线：只画小方块标记，不可点击
       for (const p of se.pts) s += `<rect x="${(X(p.x) - 2.5).toFixed(1)}" y="${(Y(p.y) - 2.5).toFixed(1)}" width="5" height="5" class="${se.cls.replace('stroke', 'fill')}"><title>${esc(se.label)} ${p.x}：${esc(neg(yFmt(p.y)))}</title></rect>`;
     } else for (const p of se.pts) {
-      s += `<circle data-node="${p.id}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p === se.pts.at(-1) ? 4.5 : 3}" class="${se.cls.replace('stroke', 'fill')}"><title>${p.x}：${esc(neg(yFmt(p.y)))}</title></circle>`;
+      s += `<circle data-node="${p.id}" cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p === se.pts[se.pts.length - 1] ? 4.5 : 3}" class="${se.cls.replace('stroke', 'fill')}"><title>${p.x}：${esc(neg(yFmt(p.y)))}</title></circle>`;
     }
-    const last = se.pts.at(-1);
+    const last = se.pts[se.pts.length - 1];
     const ly = endY.get(si);
     s += `<text ${last.id ? `data-node="${last.id}"` : ''} x="${X(last.x) + 8}" y="${ly + 4}" class="t-name" style="font-size:12px">${esc(neg(yFmt(last.y)))}</text>`;
     s += `<text x="${X(last.x) + 8}" y="${ly + 18}" class="t-small">${esc(se.label)}</text>`;
@@ -76,6 +81,10 @@ export function lineChart({ series, width = 640, height = 260, yFmt = (v) => `${
  * years: [y], parts: [{ label, cls, vals: [{v, id}] }], net: [{v, id}]
  */
 export function stackChart({ years, parts, net, width = 640, height = 240, yFmt = (v) => `${(v * 100).toFixed(1)}`, unit = '个百分点', title = '' }) {
+  // 非有限值（除以零）按 0 处理且不画柱
+  const fz = (x) => (Number.isFinite(x) ? x : 0);
+  parts = parts.map((pt) => ({ ...pt, vals: pt.vals.map((x) => ({ ...x, v: fz(x.v), bad: !Number.isFinite(x.v) })) }));
+  net = net.map((x) => ({ ...x, v: fz(x.v) }));
   const m = { l: 46, r: 12, t: 14, b: 26 };
   const W = width - m.l - m.r;
   const H = height - m.t - m.b;
@@ -91,7 +100,7 @@ export function stackChart({ years, parts, net, width = 640, height = 240, yFmt 
   });
   const ticks = niceTicks(lo, hi, 5);
   lo = Math.min(lo, ticks[0]);
-  hi = Math.max(hi, ticks.at(-1));
+  hi = Math.max(hi, ticks[ticks.length - 1]);
   const Y = (y) => m.t + (1 - (y - lo) / (hi - lo || 1)) * H;
   const bw = (W / years.length) * 0.56;
   const X = (i) => m.l + (W / years.length) * (i + 0.5);
@@ -101,7 +110,8 @@ export function stackChart({ years, parts, net, width = 640, height = 240, yFmt 
   years.forEach((yr, i) => {
     let p = 0, n = 0;
     for (const part of parts) {
-      const { v, id } = part.vals[i];
+      const { v, id, bad } = part.vals[i];
+      if (bad) continue;
       const y0 = v >= 0 ? p : n;
       const y1 = y0 + v;
       if (v >= 0) p = y1; else n = y1;
@@ -125,8 +135,8 @@ export function fanChart({ years, q, current, width = 760, height = 280, refs = 
   let hi = Math.max(...all) * 1.03;
   const ticks = niceTicks(lo, hi);
   lo = Math.min(lo, ticks[0]);
-  hi = Math.max(hi, ticks.at(-1));
-  const x0 = years[0], x1 = years.at(-1);
+  hi = Math.max(hi, ticks[ticks.length - 1]);
+  const x0 = years[0], x1 = years[years.length - 1];
   const X = (x) => m.l + ((x - x0) / (x1 - x0 || 1)) * W;
   const Y = (y) => m.t + (1 - (y - lo) / (hi - lo)) * H;
   const band = (a, b, cls) => `<path d="${years.map((y, i) => `${i ? 'L' : 'M'}${X(y).toFixed(1)},${Y(b[i]).toFixed(1)}`).join('')}${[...years].reverse().map((y, i) => `L${X(y).toFixed(1)},${Y(a[years.length - 1 - i]).toFixed(1)}`).join('')}Z" class="${cls}"/>`;
@@ -142,7 +152,7 @@ export function fanChart({ years, q, current, width = 760, height = 280, refs = 
   const li = years.length - 1;
   const lx = X(x1) + 8;
   s += `<text x="${lx}" y="${Y(q.p90[li]) + 4}" class="t-small">90%：${esc(neg(yFmt(q.p90[li])))}</text>`;
-  s += `<text x="${lx}" y="${Y(current.at(-1).y) + 4}" class="t-name" style="font-size:12px">当前 ${esc(neg(yFmt(current.at(-1).y)))}</text>`;
+  s += `<text x="${lx}" y="${Y(current[current.length - 1].y) + 4}" class="t-name" style="font-size:12px">当前 ${esc(neg(yFmt(current[current.length - 1].y)))}</text>`;
   s += `<text x="${lx}" y="${Y(q.p10[li]) + 4}" class="t-small">10%：${esc(neg(yFmt(q.p10[li])))}</text>`;
   return `<svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${esc(title)}">${s}</svg>`;
 }

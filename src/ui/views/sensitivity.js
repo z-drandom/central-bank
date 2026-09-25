@@ -92,8 +92,9 @@ export default function sensitivity(app) {
   function renderMatrix() {
     const g = app.sim.graph;
     const rows = influenceMatrix(g, app.sim.inputs);
-    const colMax = MATRIX_COLS.map((_, j) => Math.max(...rows.map((r) => Math.abs(r.cells[j] ?? 0)), 1e-12));
+    const colMax = MATRIX_COLS.map((_, j) => Math.max(...rows.map((r) => (Number.isFinite(r.cells[j]) ? Math.abs(r.cells[j]) : 0)), 1e-12));
     const short = (spec, d) => {
+      if (!Number.isFinite(d)) return '—';
       const k = dispKind(spec);
       const sg = d >= 0 ? '+' : '−';
       const a = Math.abs(d);
@@ -108,6 +109,7 @@ export default function sensitivity(app) {
         const sp = g.specs.get(r.id);
         return `<tr><th data-node="${r.id}" style="cursor:pointer;text-align:left;font-weight:500">${esc(sp.label)}<div class="hint" style="font-weight:400">${esc(stepText(sp, r.step).replace('±', '+'))}</div></th>${r.cells.map((d, j) => {
           if (d == null) return '<td class="n mat-0">·</td>';
+          if (!Number.isFinite(d)) return '<td class="n hint" title="分母为 0，无法计算">—</td>';
           const cspec = app.sim.spec(MATRIX_COLS[j][0]);
           const t = Math.min(1, Math.abs(d) / colMax[j]);
           const small = Math.abs(d) < 1e-9 * Math.max(1, Math.abs(app.v[MATRIX_COLS[j][0]]));
@@ -164,7 +166,7 @@ export default function sensitivity(app) {
     info.innerHTML = `当前值 <b>${esc(fmt(tspec, r.now))}</b>。它的上游共有 ${r.total} 个可调参数，下面按影响大小列出前 ${r.rows.length} 个。`;
     const max = Math.max(...r.rows.flatMap((x) => [Math.abs(x.up), Math.abs(x.down)]), 1e-12);
     const pctTarget = dispKind(tspec) === 'pct';
-    const dtext = (d) => (pctTarget ? `${d >= 0 ? '+' : '−'}${Math.abs(d * 100).toFixed(2)}pp` : fmtDelta(tspec, d, { unit: false }));
+    const dtext = (d) => (!Number.isFinite(d) ? '—' : pctTarget ? `${d >= 0 ? '+' : '−'}${Math.abs(d * 100).toFixed(2)}pp` : fmtDelta(tspec, d, { unit: false }));
     const bar = (d, cls) => {
       const w = (Math.abs(d) / max) * 50;
       return `<span class="${cls}" style="left:${d >= 0 ? 50 : 50 - w}%;width:${Math.max(w, 0.3).toFixed(2)}%"></span>`;

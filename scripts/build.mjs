@@ -2,8 +2,6 @@
 import { build } from 'esbuild';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
-const FONTS = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap';
-
 const result = await build({
   entryPoints: ['src/main.js'],
   bundle: true,
@@ -19,7 +17,6 @@ const css = await readFile('src/styles.css', 'utf8');
 const head = `<title>中国财政沙盘</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="${FONTS}">
 <style>${css}</style>`;
 const body = `<div id="app"></div>
 <script>${js}</script>`;

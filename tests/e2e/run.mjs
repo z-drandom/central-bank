@@ -602,6 +602,36 @@ await t('十年推演：已存的情景 A 画成对照细线', async () => {
   await page.close();
 });
 
+await t('极值：所有参数同时取下限/上限，各页无 Infinity/NaN 文本、无脚本或 SVG 报错', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#overview', { waitUntil: 'domcontentloaded' });
+  for (const end of [0, 1]) {
+    await page.evaluate((e) => { const s = {}; for (const n of __fiscal.sim.graph.inputs()) if (!n.fixed && n.range) s[n.id] = n.range[e]; __fiscal.setMany(s); }, end);
+    for (const tab of ['overview', 'y25', 'b26', 'debt', 'fb', 'proj', 'sens', 'play', 'book']) {
+      await page.evaluate((x) => __fiscal.go(x), tab);
+      await page.waitForTimeout(250);
+      const bad = await page.evaluate(() => document.body.innerText.match(/.{0,15}(NaN|Infinity|undefined).{0,15}/));
+      assert.equal(bad, null, `${end ? '上限' : '下限'} ${tab}: ${bad?.[0]}`);
+    }
+  }
+  await page.evaluate(() => { const s = {}; for (const n of __fiscal.sim.graph.inputs()) if (!n.fixed && n.range) s[n.id] = n.range[0]; __fiscal.setMany(s); __fiscal.go('b26'); });
+  await page.waitForTimeout(400);
+  assert.match(await page.locator('#changes').innerText(), /收入被调到了 0/, '收入为 0 时应给出提示');
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
+await t('字体不阻塞首屏：字体表在脚本里插入', async () => {
+  const page = await newPage();
+  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(100);
+  const head = await page.evaluate(() => [...document.querySelectorAll('link[rel=stylesheet]')].map((l) => l.href));
+  assert.ok(head.some((h) => h.includes('fonts.googleapis.com')), '首帧后应插入字体表');
+  const html = await (await import('node:fs/promises')).readFile(new globalThis.URL(URL), 'utf8');
+  assert.ok(!/<link rel="stylesheet"[^>]*googleapis/.test(html), '静态 HTML 里不应有阻塞渲染的字体表');
+  await page.close();
+});
+
 await t('规则对比表：显示六种规则，点列头切换规则', async () => {
   const page = await newPage();
   await page.goto(URL + '#b26', { waitUntil: 'domcontentloaded' });

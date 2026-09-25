@@ -13,6 +13,7 @@ import { createTracker } from './views/play.js';
 import { createNarrator } from './narrator.js';
 import { createFinder } from './finder.js';
 import { describeSnapshot } from '../model/history.js';
+import { createAchievements, confetti } from './fun.js';
 
 const KPIS = [
   { id: 'drate26', label: '2026 赤字率', ref: 0.03, refText: '3%：传统警戒参考', max: 0.08 },
@@ -50,13 +51,18 @@ export function createApp(root) {
       record();
       sim.set(id, value);
       schedule();
+      app.track('set');
     },
-    setMany(obj) { record(true); sim.setMany(obj); schedule(); },
+    setMany(obj) { record(true); sim.setMany(obj); schedule(); app.track('set'); },
     setMode(key, val) {
       record(true);
       sim.setMode(key, val);
       rebuildAll();
+      app.track('mode', `${key}=${val}`);
     },
+    // 成就统计与庆祝效果（组件创建后接上）
+    track: () => {},
+    celebrate: (o) => confetti(o),
     undo() {
       if (!hist.past.length) return;
       hist.future.push(sim.snapshot());
@@ -101,7 +107,7 @@ export function createApp(root) {
       rebuildAll();
       flash('已恢复到原图数值');
     },
-    openCard: (id) => { card.open(id); app.highlight?.(id); },
+    openCard: (id) => { card.open(id); app.highlight?.(id); app.track('card'); },
     go: (tab) => go(tab),
     onUpdate: (fn) => listeners.add(fn),
     flash: (t) => flash(t),
@@ -136,7 +142,7 @@ export function createApp(root) {
     histList.innerHTML = '';
     states.forEach((st, i) => {
       const d = describeSnapshot(st.snap);
-      histList.append(h('button', { class: `finder-item ${st.now ? 'on' : ''}`, type: 'button', disabled: !!st.now, onclick: () => { closeHist(); app.restore(st.snap, '已回到历史状态（可撤销）'); } },
+      histList.append(h('button', { class: `finder-item ${st.now ? 'on' : ''}`, type: 'button', disabled: !!st.now, onclick: () => { closeHist(); app.restore(st.snap, '已回到历史状态（可撤销）'); app.track('history'); } },
         h('span', { class: 'fi-l' }, st.now ? '当前' : `${i} 步之前`, h('small', {}, d.text)),
         h('span', { class: 'fi-v hint' }, d.count ? `${d.count} 处改动` : '原图'),
       ));
@@ -191,7 +197,10 @@ export function createApp(root) {
   app.tracker = tracker;
   const narrator = createNarrator(app);
   app.narrator = narrator;
-  root.append(h('div', { class: 'app' }, top, viewHost, changes.el, foot), ...card.el, toast, tracker.el, narrator.el, jump);
+  const achievements = createAchievements(app);
+  app.achievements = achievements;
+  app.track = (ev, payload) => achievements.track(ev, payload);
+  root.append(h('div', { class: 'app' }, top, viewHost, changes.el, foot), ...card.el, toast, tracker.el, narrator.el, jump, achievements.el);
 
   // 高亮：传导链悬停、公式卡片打开时，在当前图表里标出同一个数字
   let hlId = null;

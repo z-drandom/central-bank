@@ -391,7 +391,7 @@ await t('测验：交互项题可答，载入情景后打开对应相图，且�
   await page.goto(URL + '#play', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => __fiscal.set('t_vat', 65000));
   await page.waitForTimeout(200);
-  for (let i = 0; i < 12; i++) await page.locator('button', { hasText: '下一题' }).click();
+  for (let i = 0; i < 12; i++) await page.locator('#quiz button', { hasText: '下一题' }).click();
   assert.equal(await page.getByText('名义增速从 5% 提到 7%').count(), 1);
   await page.locator('.quiz-opt', { hasText: '再加一个交互项' }).click();
   assert.match(await page.locator('.quiz-exp').innerText(), /答对了/);
@@ -629,6 +629,84 @@ await t('字体不阻塞首屏：字体表在脚本里插入', async () => {
   assert.ok(head.some((h) => h.includes('fonts.googleapis.com')), '首帧后应插入字体表');
   const html = await (await import('node:fs/promises')).readFile(new globalThis.URL(URL), 'utf8');
   assert.ok(!/<link rel="stylesheet"[^>]*googleapis/.test(html), '静态 HTML 里不应有阻塞渲染的字体表');
+  await page.close();
+});
+
+await t('随机任务：开题、按参考解完成、连胜 +1、下一题；中途放弃连胜清零', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#play', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} });
+  await page.locator('#mission-go').click();
+  await page.waitForTimeout(250);
+  assert.ok(await page.locator('.tracker').isVisible(), '应出现任务卡');
+  assert.match(await page.locator('.tracker').innerText(), /随机任务 · 连胜 0/);
+  const sol = await page.evaluate(() => __fiscal.activeChallenge.solution);
+  await page.evaluate((s) => __fiscal.setMany(Object.fromEntries(s.map((c) => [c.id, c.set]))), sol);
+  await page.waitForTimeout(300);
+  const txt = await page.locator('.tracker').innerText();
+  assert.match(txt, /连胜 1/);
+  assert.match(txt, /★★★/, '按参考解（2 个旋钮）应得三星');
+  assert.ok(await page.locator('.tracker button', { hasText: '下一题' }).isVisible());
+  await page.locator('.tracker button', { hasText: '下一题' }).click();
+  await page.waitForTimeout(250);
+  assert.match(await page.locator('.tracker').innerText(), /连胜 1/);
+  // 动一个规定外的旋钮：星级封顶一颗
+  const m = await page.evaluate(() => __fiscal.activeChallenge);
+  const other = await page.evaluate((allowed) => __fiscal.sim.graph.inputs().find((n) => !n.fixed && n.range && !allowed.includes(n.id) && n.id === 'nontax')?.id, m.allowed);
+  if (other) await page.evaluate((id) => __fiscal.set(id, __fiscal.v[id] * 1.01), other);
+  await page.evaluate((s) => __fiscal.setMany(Object.fromEntries(s.map((c) => [c.id, c.set]))), m.solution);
+  await page.waitForTimeout(300);
+  const t2 = await page.locator('.tracker').innerText();
+  if (other && !/✗/.test(t2)) assert.match(t2, /★☆☆/, '动了规定外的旋钮最多一星');
+  // 再开一题但中途放弃
+  await page.locator('.tracker button', { hasText: '下一题' }).click();
+  await page.waitForTimeout(200);
+  await page.locator('.tracker button[aria-label="结束挑战"]').click();
+  await page.waitForTimeout(200);
+  assert.match(await page.locator('#missions').innerText(), /当前连胜 0/);
+  assert.match(await page.locator('#missions').innerText(), /最佳 2/);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
+await t('成就：拧一次旋钮解锁"初次上手"，弹出徽章；成就墙更新', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#play', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} __fiscal.achievements.reset(); });
+  await page.evaluate(() => __fiscal.set('t_vat', 60000));
+  await page.waitForTimeout(200);
+  assert.match(await page.locator('.badge-toast').innerText(), /初次上手/);
+  assert.equal(await page.evaluate(() => __fiscal.achievements.count), 1);
+  await page.evaluate(() => __fiscal.set('dr26', 0.065));
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => __fiscal.achievements.count), 2, '赤字率 6.5% 解锁"大手笔"');
+  assert.equal(await page.locator('#badges .badge.on').count(), 2);
+  assert.deepEqual(page.errors, []);
+  await page.close();
+});
+
+await t('今日任务：同一天两次开出同一道题；任务卡的旋钮按钮打开带滑杆的卡片；完成后按钮显示星级', async () => {
+  const page = await newPage();
+  await page.goto(URL + '#play', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => { try { localStorage.clear(); } catch {} });
+  await page.locator('#daily-go').click();
+  await page.waitForTimeout(200);
+  const a = await page.evaluate(() => __fiscal.activeChallenge.story);
+  await page.evaluate(() => __fiscal.go('play'));
+  await page.locator('#daily-go').click();
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => __fiscal.activeChallenge.story), a);
+  await page.locator('.tr-levers .chip').first().click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('.drawer.open input[type=range]').count(), 1, '卡片里应有滑杆');
+  await page.keyboard.press('Escape');
+  const sol = await page.evaluate(() => __fiscal.activeChallenge.solution);
+  await page.evaluate((s) => __fiscal.setMany(Object.fromEntries(s.map((c) => [c.id, c.set]))), sol);
+  await page.waitForTimeout(300);
+  await page.evaluate(() => __fiscal.go('play'));
+  await page.waitForTimeout(200);
+  assert.match(await page.locator('#daily-go').innerText(), /★/);
+  assert.deepEqual(page.errors, []);
   await page.close();
 });
 

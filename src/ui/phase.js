@@ -287,6 +287,7 @@ export function createPhase(app) {
     const xs = s.spec(ctx.x);
     const ys = s.spec(ctx.y);
     cursor = [i, j];
+    app.track?.('phase');
     app.restore(s.snapshot(), `已把${xs.label}设为 ${fmt(xs, r.xs[i])}，${ys.label}设为 ${fmt(ys, r.ys[j])}${ctx.differs ? '，并切换到本图的平衡规则' : ''}（可撤销）`);
   }
 

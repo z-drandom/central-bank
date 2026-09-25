@@ -10,6 +10,7 @@ export function createPaths(app) {
 
   function show(from, to) {
     pair = [from, to];
+    app.track?.('paths');
     el.hidden = false;
     render();
     requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));

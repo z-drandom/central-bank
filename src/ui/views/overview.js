@@ -165,6 +165,7 @@ export default function overview(app) {
   }
   function finishPlay() {
     const n = play.steps.length;
+    app.track?.('replay');
     clearTimeout(play.timer);
     play = null;
     paintPlay();
@@ -232,6 +233,7 @@ export default function overview(app) {
     }));
   };
   const QUESTIONS = [
+    ['想玩点什么？', '随机任务每题现场出、保证有解：只许动几个旋钮，把指标拧到目标。连胜、三星、成就徽章都记着呢。', '来一道随机任务 🎲', () => { app.go('play'); requestAnimationFrame(() => app.startMission?.()); }],
     ['这个数是怎么算出来的？', '点任何数字，公式卡片给出"公式 / 读法 / 代入"和它的上下游。', '打开一张卡片', () => app.openCard('oth26')],
     ['我改一个数，哪些数会跟着变？', '每页底部的"传导链"按依赖顺序列出全部被牵动的数字；总览图可以一站一站回放。', '看传导回放', () => {
       // 还没有改动时先放一个示例冲击，否则回放无事可放

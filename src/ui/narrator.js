@@ -78,6 +78,7 @@ export function createNarrator(app) {
     next.textContent = k === story.steps.length - 1 ? '讲完了 ✓' : '下一步 →';
   }
   function stop(done) {
+    if (done && story) app.track?.('story', story.id);
     story = null;
     el.hidden = true;
     app.highlight(null);

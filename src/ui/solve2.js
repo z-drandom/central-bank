@@ -122,6 +122,7 @@ export function createSolve2(app) {
         const c = app.sim.clone();
         if (differs) c.setModes(modes);
         c.setMany({ [params[0]]: r.x[0], [params[1]]: r.x[1] });
+        app.track?.('solve2');
         app.restore(c.snapshot(), `已同时调整${pspecs[0].label}和${pspecs[1].label}${differs ? '，并切换规则' : ''}（可撤销）`);
         modes = {};
         showRules();

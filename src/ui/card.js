@@ -117,7 +117,7 @@ export function createCard(app) {
       body.append(h('div', { class: 'card-ctl' }, slider.el));
     }
     if (s.expr != null && isCh) body.append(whyBlock(id));
-    if (s.expr != null && isCh) { const sb = shapleyBlock(id); if (sb) body.append(sb); }
+    if (s.expr != null && isCh) { const sb = shapleyBlock(id); if (sb) { body.append(sb); app.track?.('shapley'); } }
     if (s.note) body.append(h('p', { class: 'note' }, s.note));
     if (s.src) body.append(h('div', { class: 'src' }, `来源：${s.src}`));
     const TAB = { y25: 'y25', b26: 'b26', debt: 'debt', fb: 'fb', proj: 'proj', macro: 'b26' };

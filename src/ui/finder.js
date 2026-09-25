@@ -142,6 +142,7 @@ export function createFinder(app) {
     if (!id) return;
     close();
     app.openCard(id);
+    app.track?.('finder');
   }
   input.addEventListener('input', () => { sel = 0; render(); });
   input.addEventListener('keydown', (e) => {

@@ -847,3 +847,35 @@ td[data-pair]:focus-visible { outline: 2px solid var(--focus); outline-offset: -
   .phc-u10 { fill: var(--ph-hi); fill-opacity: 0.7; } .phc-d10 { fill: var(--ph-lo); fill-opacity: 0.7; }
   .ov-box.on { fill: var(--surface-2); }
 }
+
+/* —— 好玩的部分 —— */
+.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 95; overflow: hidden; }
+.confetti i { position: absolute; width: 8px; height: 11px; border-radius: 2px; opacity: 0; animation: confetti 1.35s cubic-bezier(0.2, 0.7, 0.35, 1) forwards; }
+@keyframes confetti {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 240px)) rotate(var(--rot)); opacity: 0; }
+}
+.badge-toast { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 96; display: flex; gap: 12px; align-items: center; background: var(--surface); border: 2px solid var(--gold); border-radius: 12px; padding: 10px 16px 10px 12px; box-shadow: var(--shadow); max-width: calc(100vw - 32px); }
+.badge-toast.in { animation: badge-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3); }
+@keyframes badge-in { from { transform: translate(-50%, -24px) scale(0.9); opacity: 0; } to { transform: translate(-50%, 0) scale(1); opacity: 1; } }
+.badge-toast .bt-icon { font-size: 30px; line-height: 1; }
+.badge-toast small { display: block; color: var(--gold); font-weight: 700; font-size: 11.5px; letter-spacing: 0.06em; }
+.badge-toast b { display: block; font: 700 16px var(--f-display); }
+.badge-toast em { display: block; font-style: normal; font-size: 12.5px; color: var(--ink-2); }
+.badge-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.badge { border: 1px dashed var(--rule-strong); border-radius: 10px; padding: 10px; display: grid; gap: 2px; justify-items: start; color: var(--ink-3); background: var(--surface); }
+.badge .b-icon { font-size: 24px; line-height: 1.2; filter: grayscale(1); opacity: 0.5; }
+.badge b { font-size: 13.5px; }
+.badge small { font-size: 11.5px; line-height: 1.45; }
+.badge.on { border: 1px solid var(--gold); color: var(--ink); background: color-mix(in srgb, var(--gold) 7%, var(--surface)); }
+.badge.on .b-icon { filter: none; opacity: 1; }
+.mission-sheet { border: 2px solid var(--ink); }
+.m-row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.btn.big { font-size: 15px; padding: 9px 18px; }
+.m-stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+.m-stats b { font-size: 18px; color: var(--ink); margin-left: 2px; }
+.tr-story { font-size: 12.5px; line-height: 1.55; }
+@media (prefers-reduced-motion: reduce) { .badge-toast.in { animation: none; } }
+.tr-levers { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.tr-levers .chip { font-size: 12px; padding: 3px 9px; }

@@ -93,6 +93,44 @@ export class Graph {
     };
   }
 
+  /**
+   * 只让 vars 这几个输入变化时的快速求值器：先在 inputs 处算好 target 的全部上游，
+   * 之后每次调用只重算受 vars 影响的那部分节点（按拓扑序覆盖写入同一个值对象）。
+   * 调用方式 f(vals)，vals 与 vars 一一对应；结果与 compute({...inputs, vars: vals})[target] 相同。
+   */
+  evaluatorDelta(target, vars, inputs = {}) {
+    const up = [...this.upstream(target), target];
+    const hit = new Set(vars);
+    for (const x of vars) for (const d of this.downstream(x)) hit.add(d);
+    const v = {};
+    for (const id of up) {
+      const n = this.specs.get(id);
+      v[id] = n.expr == null ? (id in inputs ? inputs[id] : n.base) : evaluate(n.ast, (x) => v[x]);
+    }
+    const nodes = up.filter((id) => hit.has(id) && this.specs.get(id).expr != null).map((id) => this.specs.get(id));
+    const get = (x) => v[x];
+    return (vals) => {
+      vars.forEach((x, i) => { v[x] = vals[i]; });
+      for (const n of nodes) v[n.id] = evaluate(n.ast, get);
+      return v[target];
+    };
+  }
+
+  /** 同时求多个目标：只算它们的公共上游，返回包含这些节点的值对象 */
+  evaluatorMany(targets) {
+    const need = new Set(targets);
+    for (const t of targets) for (const u of this.upstream(t)) need.add(u);
+    const nodes = this.order.filter((id) => need.has(id)).map((id) => this.specs.get(id));
+    return (inputs = {}) => {
+      const v = {};
+      for (const n of nodes) {
+        if (n.expr == null) v[n.id] = n.id in inputs ? inputs[n.id] : n.base;
+        else v[n.id] = evaluate(n.ast, (x) => v[x]);
+      }
+      return v;
+    };
+  }
+
   baseInputs() {
     const o = {};
     for (const n of this.inputs()) o[n.id] = n.base;

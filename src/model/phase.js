@@ -75,8 +75,9 @@ export function fitRange(spec, r, cur) {
  * 另给出：当前点的边际影响、等值线取舍比率、全图四角的交互项。
  */
 export function phaseGrid(graph, inputs, { x, y, target, xr, yr, n = 31 }) {
-  const f = graph.evaluator(target);
-  const at = (xv, yv) => f({ ...inputs, [x]: xv, [y]: yv });
+  // 只重算受 x、y 影响的节点，其余上游沿用当前值（结果与整图重算相同）
+  const f = graph.evaluatorDelta(target, [x, y], inputs);
+  const at = (xv, yv) => f([xv, yv]);
   const xs = linspace(xr[0], xr[1], n);
   const ys = linspace(yr[0], yr[1], n);
   const z = ys.map((yv) => xs.map((xv) => at(xv, yv)));

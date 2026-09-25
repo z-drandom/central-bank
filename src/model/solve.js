@@ -8,7 +8,9 @@ export function goalSeek(graph, inputs, { target, goal, param, lo, hi, tol = 1e-
   const [rlo, rhi] = spec.range ?? [spec.base * 0.5, spec.base * 1.5];
   let a = lo ?? rlo;
   let b = hi ?? rhi;
-  const f = (x) => graph.compute({ ...inputs, [param]: x })[target] - goal;
+  const ev = graph.evaluator(target);
+  const probe = { ...inputs };
+  const f = (x) => { probe[param] = x; return ev(probe) - goal; };
   let fa = f(a);
   let fb = f(b);
   if (!Number.isFinite(fa) || !Number.isFinite(fb)) return { ok: false, reason: '区间端点处无法计算' };

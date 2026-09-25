@@ -51,6 +51,25 @@ test('代入用精确格式：小数值保留足够有效数字，大数值两�
   assert.equal(fmtExact({ unit: 'yi' }, NaN), '—');
 });
 
+test('全局查找：40 个常用说法的命中率（前 5 条 ≥ 90%，首条 ≥ 65%）', async () => {
+  const { Sim } = await import('../src/model/sim.js');
+  const { findNodes } = await import('../src/ui/finder.js');
+  const g = new Sim().graph;
+  const cases = [['赤字率', 'drate26'], ['负债率', 'debt_gdp1'], ['国债', 'bc0'], ['专项债', 'sp26'], ['土地出让', 'f2_land'], ['增值税', 't_vat'], ['付息', 'int26'], ['转移支付', 'tr26'], ['隐性债务', 'hsel'], ['2035 负债率', 'p_d_2035'],
+    ['社保补贴', 'f4_sub'], ['GDP', 'gdp26'], ['名义增速', 'g_nom'], ['地方收入', 'rl26'], ['中央收入', 'rc26'], ['国防', 'def26'], ['其它支出', 'oth26'], ['自给率', 'self26'], ['广义赤字', 'fc_gap'], ['利率', 'rcg'],
+    ['出口退税', 'rebate'], ['赤字', 'd26'], ['化债', 'swap26'], ['个税', 't_pit'], ['城投', 'h_bond'], ['企业所得税', 't_cit'], ['消费税', 't_con'], ['预备费', 'res26'], ['科技支出', 'sci26'], ['2030 负债率', 'p_d_2030'],
+    ['调入资金', 'tin26'], ['地方赤字', 'dl26'], ['国债余额', 'bc0'], ['土地', 'f2_land'], ['养老', 'f4_exp'], ['专项债利息', 'int_ls26'], ['付息占收入', 'intburden26'], ['稳定基金', 'tstab26'], ['广义负债率', 'broad_gdp1'], ['非税', 'nontax']];
+  let top1 = 0;
+  let top5 = 0;
+  for (const [q, want] of cases) {
+    const i = findNodes(g, q).indexOf(want);
+    if (i === 0) top1++;
+    if (i >= 0 && i < 5) top5++;
+  }
+  assert.ok(top5 >= 0.9 * cases.length, `前 5 条命中 ${top5}/${cases.length}`);
+  assert.ok(top1 >= 0.65 * cases.length, `首条命中 ${top1}/${cases.length}`);
+});
+
 test('全局查找：名称开头优先，多个关键词须全部命中', async () => {
   const { Sim } = await import('../src/model/sim.js');
   const { findNodes } = await import('../src/ui/finder.js').catch(() => ({}));

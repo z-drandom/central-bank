@@ -16,6 +16,8 @@ const ROWS = [
 
 export function createScenarios(app) {
   let store = load(KEY, { A: null, B: null });
+  // 其他页面（十年推演）通过这里读情景，存储不可用时也与本表一致
+  app.scenarioStore = () => store;
   const table = h('div', { class: 'tbl-wrap' });
   const codeBox = h('textarea', { id: 'scen-code', class: 'search', rows: 2, placeholder: '在这里粘贴情景代码，或点"复制当前情景代码"', 'aria-label': '情景代码', style: { fontFamily: 'var(--f-mono)', fontSize: '12px', resize: 'vertical' } });
   const msg = h('span', { class: 'hint', role: 'status' });

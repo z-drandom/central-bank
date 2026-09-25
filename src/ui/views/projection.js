@@ -70,7 +70,7 @@ export default function projection(app) {
   // 已保存的情景 A/B：各自算一遍，画成对照细线（按情景内容缓存）
   const scenCache = new Map();
   function scenarioSeries() {
-    const store = load(SCEN_KEY, { A: null, B: null });
+    const store = app.scenarioStore?.() ?? load(SCEN_KEY, { A: null, B: null });
     const out = [];
     for (const [k, cls] of [['A', 'stroke-gold'], ['B', 'stroke-exp']]) {
       const sc = store?.[k]?.sc;

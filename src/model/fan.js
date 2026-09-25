@@ -24,14 +24,16 @@ export function fan(graph, inputs, key, years, { n = 300, seed = 7, ranges = FAN
   const r = rng(seed);
   const samples = years.map(() => []);
   const usable = ranges.filter((x) => graph.isInput(x.id));
+  // 只算所需年份的上游；复用同一个输入对象（每次展开 100 多个键的对象比求值本身还慢）
+  const ev = graph.evaluatorMany(years.map((y) => `${key}_${y}`));
+  const patch = { ...inputs };
   for (let k = 0; k < n; k++) {
-    const patch = { ...inputs };
     for (const x of usable) {
       const cur = inputs[x.id] ?? graph.specs.get(x.id).base;
       const u = x.lo + (x.hi - x.lo) * r();
       patch[x.id] = x.kind === 'mul' ? cur * u : cur + u;
     }
-    const v = graph.compute(patch);
+    const v = ev(patch);
     years.forEach((y, i) => samples[i].push(v[`${key}_${y}`]));
   }
   const q = { p10: [], p25: [], p50: [], p75: [], p90: [] };

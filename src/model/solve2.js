@@ -25,7 +25,8 @@ export function goalSeek2(graph, inputs, { targets, goals, params, maxIter = 60,
   const lo = params.map((p) => graph.specs.get(p).range?.[0] ?? -Infinity);
   const hi = params.map((p) => graph.specs.get(p).range?.[1] ?? Infinity);
   const clamp = (x) => x.map((v, i) => Math.min(hi[i], Math.max(lo[i], v)));
-  const at = (x) => ({ ...inputs, [p1]: x[0], [p2]: x[1] });
+  const probe = { ...inputs };
+  const at = (x) => { probe[p1] = x[0]; probe[p2] = x[1]; return probe; };
   const x0 = params.map((p) => inputs[p] ?? graph.specs.get(p).base);
   // 残差按目标量级归一化，避免"亿元"和"百分比"混在一起比较
   const sc = [0, 1].map((i) => Math.max(Math.abs(goals[i]), Math.abs([e1, e2][i](at(x0))), 1e-3));

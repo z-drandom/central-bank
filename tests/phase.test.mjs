@@ -107,3 +107,22 @@ test('区间：包含当前值，裁剪到滑杆区间', () => {
   const m = defaultRange({ unit: 'yi', range: [0, 100000] }, 80000);
   assert.deepEqual(m, [48000, 100000]);
 });
+
+test('增量求值器与多目标求值器：结果与整图重算逐位相同', () => {
+  const sim = new Sim({ proj: 'spend' });
+  const g = sim.graph;
+  let seed = 3;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+  for (const [target, vars] of [['p_d_2035', ['pg', 'pshift']], ['oth26', ['g_nom', 'dr26']], ['self26', ['t_vat', 's_vat']], ['p_iball_2030', ['rcg', 'pphi']]]) {
+    const f = g.evaluatorDelta(target, vars, sim.inputs);
+    for (let k = 0; k < 25; k++) {
+      const vals = vars.map((id) => { const [a, b] = g.specs.get(id).range; return a + rnd() * (b - a); });
+      const direct = g.compute({ ...sim.inputs, ...Object.fromEntries(vars.map((id, i) => [id, vals[i]])) })[target];
+      assert.ok(Object.is(f(vals), direct), `${target} ${vals}`);
+    }
+  }
+  const many = g.evaluatorMany(['p_d_2030', 'p_d_2035']);
+  const v = many(sim.inputs);
+  assert.equal(v.p_d_2030, sim.values.p_d_2030);
+  assert.equal(v.p_d_2035, sim.values.p_d_2035);
+});

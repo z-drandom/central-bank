@@ -1,5 +1,5 @@
 // 双参数相图：两个旋钮一起拧，目标指标在整个平面上怎么变。
-// 颜色 = 与当前值的差（红高绿低）；细线 = 等值线；粗实线 = 与当前相同的组合；金色虚线 = 参考线。
+// 颜色 = 与当前值的差（红高蓝低，红绿色盲也能分清）；细线 = 等值线；粗实线 = 与当前相同的组合；金色虚线 = 参考线。
 import { h, esc } from './dom.js';
 import { fmt, fmtDelta, fmtExact, dispKind } from '../model/format.js';
 import { PHASE_PRESETS, REF_LEVEL, phaseGrid, contour, niceLevels, fitRange, defaultRange } from '../model/phase.js';
@@ -59,8 +59,8 @@ export function createPhase(app) {
         readout,
         plot,
         h('div', { class: 'legend' },
-          h('span', {}, h('i', { style: { background: 'var(--up)' } }), '比当前高'),
-          h('span', {}, h('i', { style: { background: 'var(--down)' } }), '比当前低（颜色越深差得越多）'),
+          h('span', {}, h('i', { style: { background: 'var(--ph-hi)' } }), '比当前高'),
+          h('span', {}, h('i', { style: { background: 'var(--ph-lo)' } }), '比当前低（颜色越深差得越多）'),
           h('span', {}, h('i', { class: 'lg-line', style: { background: 'var(--ink)' } }), '与当前相同的组合'),
           refLegend,
           h('span', {}, h('i', { class: 'lg-dot' }), '当前位置'),
@@ -371,5 +371,16 @@ export function createPhase(app) {
     reveal();
   };
 
-  return { el, update, get state() { return last; } };
+  // 相图不在视口内时推迟重算，滚动到它时再补算一次
+  let visible = true;
+  let dirty = false;
+  if (typeof IntersectionObserver !== 'undefined') {
+    new IntersectionObserver((entries) => {
+      visible = entries.some((e) => e.isIntersecting);
+      if (visible && dirty) { dirty = false; update(); }
+    }).observe(el);
+  }
+  const lazyUpdate = () => { if (visible || !last) update(); else dirty = true; };
+
+  return { el, update: lazyUpdate, get state() { return last; } };
 }

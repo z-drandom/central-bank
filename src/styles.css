@@ -22,6 +22,8 @@
   --gold: #86660f;
   --up: #c8372d;
   --down: #16835a;
+  --ph-hi: #c8372d; /* 相图发散配色：红—蓝，对红绿色盲可分（校验 ΔE 20） */
+  --ph-lo: #1d63b0;
   --link: #9aa5ae;
   --focus: #2c5a87;
   --shadow: 0 1px 2px rgba(23, 33, 43, 0.06), 0 4px 16px rgba(23, 33, 43, 0.06);
@@ -55,6 +57,10 @@
     --gold: #d6ad4a;
     --up: #f0675a;
     --down: #40bd88;
+  --ph-hi: #e0674f;
+  --ph-lo: #4b94dd;
+    --ph-hi: #e0674f;
+    --ph-lo: #4b94dd;
     --link: #5b6875;
     --focus: #74a7d8;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
@@ -84,6 +90,8 @@
   --gold: #d6ad4a;
   --up: #f0675a;
   --down: #40bd88;
+  --ph-hi: #e0674f;
+  --ph-lo: #4b94dd;
   --link: #5b6875;
   --focus: #74a7d8;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
@@ -295,7 +303,8 @@ button { cursor: pointer; }
 }
 .ctl-val:focus { border-color: var(--focus); outline: none; background: var(--surface); }
 .ctl-unit { font-size: 11px; color: var(--ink-3); width: 28px; }
-.ctl-reset { border: 0; background: none; color: var(--ink-3); padding: 0 2px; font-size: 13px; visibility: hidden; }
+.ctl-reset { border: 0; background: none; color: var(--ink-3); padding: 0; font-size: 14px; visibility: hidden; min-width: 28px; min-height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
+.ctl-reset:hover { background: var(--surface-2); color: var(--ink); }
 .ctl.dirty .ctl-reset { visibility: visible; }
 .ctl.dirty .ctl-name { color: var(--ink); font-weight: 600; }
 .ctl.dirty .ctl-val { background: var(--xfer-soft); }
@@ -735,16 +744,16 @@ kbd { font-family: var(--f-mono); font-size: 12px; border: 1px solid var(--rule-
 .ph-plot svg { display: block; width: 100%; height: auto; touch-action: manipulation; cursor: crosshair; }
 .ph-plot svg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .phc-0 { fill: var(--surface); } .phc-nan { fill: var(--surface-3); }
-.phc-u1 { fill: color-mix(in srgb, var(--up) 7%, var(--surface)); } .phc-d1 { fill: color-mix(in srgb, var(--down) 7%, var(--surface)); }
-.phc-u2 { fill: color-mix(in srgb, var(--up) 14%, var(--surface)); } .phc-d2 { fill: color-mix(in srgb, var(--down) 14%, var(--surface)); }
-.phc-u3 { fill: color-mix(in srgb, var(--up) 21%, var(--surface)); } .phc-d3 { fill: color-mix(in srgb, var(--down) 21%, var(--surface)); }
-.phc-u4 { fill: color-mix(in srgb, var(--up) 28%, var(--surface)); } .phc-d4 { fill: color-mix(in srgb, var(--down) 28%, var(--surface)); }
-.phc-u5 { fill: color-mix(in srgb, var(--up) 35%, var(--surface)); } .phc-d5 { fill: color-mix(in srgb, var(--down) 35%, var(--surface)); }
-.phc-u6 { fill: color-mix(in srgb, var(--up) 42%, var(--surface)); } .phc-d6 { fill: color-mix(in srgb, var(--down) 42%, var(--surface)); }
-.phc-u7 { fill: color-mix(in srgb, var(--up) 49%, var(--surface)); } .phc-d7 { fill: color-mix(in srgb, var(--down) 49%, var(--surface)); }
-.phc-u8 { fill: color-mix(in srgb, var(--up) 56%, var(--surface)); } .phc-d8 { fill: color-mix(in srgb, var(--down) 56%, var(--surface)); }
-.phc-u9 { fill: color-mix(in srgb, var(--up) 63%, var(--surface)); } .phc-d9 { fill: color-mix(in srgb, var(--down) 63%, var(--surface)); }
-.phc-u10 { fill: color-mix(in srgb, var(--up) 70%, var(--surface)); } .phc-d10 { fill: color-mix(in srgb, var(--down) 70%, var(--surface)); }
+.phc-u1 { fill: color-mix(in srgb, var(--ph-hi) 7%, var(--surface)); } .phc-d1 { fill: color-mix(in srgb, var(--ph-lo) 7%, var(--surface)); }
+.phc-u2 { fill: color-mix(in srgb, var(--ph-hi) 14%, var(--surface)); } .phc-d2 { fill: color-mix(in srgb, var(--ph-lo) 14%, var(--surface)); }
+.phc-u3 { fill: color-mix(in srgb, var(--ph-hi) 21%, var(--surface)); } .phc-d3 { fill: color-mix(in srgb, var(--ph-lo) 21%, var(--surface)); }
+.phc-u4 { fill: color-mix(in srgb, var(--ph-hi) 28%, var(--surface)); } .phc-d4 { fill: color-mix(in srgb, var(--ph-lo) 28%, var(--surface)); }
+.phc-u5 { fill: color-mix(in srgb, var(--ph-hi) 35%, var(--surface)); } .phc-d5 { fill: color-mix(in srgb, var(--ph-lo) 35%, var(--surface)); }
+.phc-u6 { fill: color-mix(in srgb, var(--ph-hi) 42%, var(--surface)); } .phc-d6 { fill: color-mix(in srgb, var(--ph-lo) 42%, var(--surface)); }
+.phc-u7 { fill: color-mix(in srgb, var(--ph-hi) 49%, var(--surface)); } .phc-d7 { fill: color-mix(in srgb, var(--ph-lo) 49%, var(--surface)); }
+.phc-u8 { fill: color-mix(in srgb, var(--ph-hi) 56%, var(--surface)); } .phc-d8 { fill: color-mix(in srgb, var(--ph-lo) 56%, var(--surface)); }
+.phc-u9 { fill: color-mix(in srgb, var(--ph-hi) 63%, var(--surface)); } .phc-d9 { fill: color-mix(in srgb, var(--ph-lo) 63%, var(--surface)); }
+.phc-u10 { fill: color-mix(in srgb, var(--ph-hi) 70%, var(--surface)); } .phc-d10 { fill: color-mix(in srgb, var(--ph-lo) 70%, var(--surface)); }
 .ph-iso { fill: none; stroke: var(--ink); stroke-width: 1; opacity: .35; stroke-linecap: round; }
 .ph-now { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }
 .ph-ref { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-dasharray: 7 4; stroke-linecap: round; }
@@ -823,3 +832,18 @@ td[data-pair]:focus-visible { outline: 2px solid var(--focus); outline-offset: -
 .finder.hist .finder-item:disabled { cursor: default; opacity: 1; }
 .finder.hist .fi-l small { white-space: normal; }
 @media (max-width: 1080px) { .sheet[id] { scroll-margin-top: 12px; } }
+
+/* 不支持 color-mix 的旧浏览器（Safari < 16.2、Firefox < 113）：相图格子改用纯色 + 透明度 */
+@supports not (color: color-mix(in srgb, red 50%, white)) {
+  .phc-u1 { fill: var(--ph-hi); fill-opacity: 0.07; } .phc-d1 { fill: var(--ph-lo); fill-opacity: 0.07; }
+  .phc-u2 { fill: var(--ph-hi); fill-opacity: 0.14; } .phc-d2 { fill: var(--ph-lo); fill-opacity: 0.14; }
+  .phc-u3 { fill: var(--ph-hi); fill-opacity: 0.21; } .phc-d3 { fill: var(--ph-lo); fill-opacity: 0.21; }
+  .phc-u4 { fill: var(--ph-hi); fill-opacity: 0.28; } .phc-d4 { fill: var(--ph-lo); fill-opacity: 0.28; }
+  .phc-u5 { fill: var(--ph-hi); fill-opacity: 0.35; } .phc-d5 { fill: var(--ph-lo); fill-opacity: 0.35; }
+  .phc-u6 { fill: var(--ph-hi); fill-opacity: 0.42; } .phc-d6 { fill: var(--ph-lo); fill-opacity: 0.42; }
+  .phc-u7 { fill: var(--ph-hi); fill-opacity: 0.49; } .phc-d7 { fill: var(--ph-lo); fill-opacity: 0.49; }
+  .phc-u8 { fill: var(--ph-hi); fill-opacity: 0.56; } .phc-d8 { fill: var(--ph-lo); fill-opacity: 0.56; }
+  .phc-u9 { fill: var(--ph-hi); fill-opacity: 0.63; } .phc-d9 { fill: var(--ph-lo); fill-opacity: 0.63; }
+  .phc-u10 { fill: var(--ph-hi); fill-opacity: 0.7; } .phc-d10 { fill: var(--ph-lo); fill-opacity: 0.7; }
+  .ov-box.on { fill: var(--surface-2); }
+}

@@ -212,7 +212,7 @@ export default function handbook(app) {
 
   function renderGloss() {
     glossBox.innerHTML = GLOSSARY.map((g) => `<div class="gloss-item">
-      <div class="gloss-t"><b>${esc(g.term)}</b><span class="tag">图${esc(g.img)}</span></div>
+      <div class="gloss-t"><b>${esc(g.term)}</b><span class="tag">${g.img ? `图${esc(g.img)}` : '方法'}</span></div>
       <p>${esc(g.def)}</p>
       <div class="gloss-n">${g.ids.filter((id) => app.sim.has(id)).map((id) => `<button class="chip" data-node="${id}">${esc(app.sim.spec(id).label)}：${esc(fmt(app.sim.spec(id), app.v[id]))}</button>`).join('')}</div>
     </div>`).join('');

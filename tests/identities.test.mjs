@@ -177,3 +177,32 @@ test('长期收敛负债率：按各自推演规则把 2035 年的比率冻结�
   for (let i = 0; i < 5000; i++) d = d * (1 + v.p_r_2035) / (1 + v.pg) + v.p_pd_2035 + v.p_sfa_2035;
   close(d, v.p_dstar, 'd*（支出增速不变）');
 });
+
+test('2025"支出调整"：增收按计划数等比例分给各项（付息、补充稳定基金不动），各项之间的比例不变', () => {
+  const sim = new Sim({ y25: 'cut' });
+  const b = { ...sim.values };
+  sim.setMany({ t_vat: b.t_vat * 1.1, t_cit: b.t_cit * 1.05 });
+  const v = sim.values;
+  const k = v.k25;
+  assert.ok(k > 1.02, `分摊系数 ${k}`);
+  const flex = ['other', 'ss', 'edu', 'agri', 'health', 'urban', 'def', 'sci', 'trans', 'env', 'cult'];
+  for (const id of flex) close(v[`e_${id}`] / b[`e_${id}`], k, id);
+  close(v.e_int, b.e_int, '付息不动');
+  close(v.e_stab, b.e_stab, '补充稳定基金不动');
+  close(v.exp25, v.rev25 + v.def25 + v.tin25, '支出 = 收入 + 赤字 + 调入');
+  close(v.exp25 - b.exp25, v.rev25 - b.rev25, '多收多少就多花多少');
+  // 社保与教育之比、社保与"其它"之比都不变
+  close(v.e_ss / v.e_edu, b.e_ss / b.e_edu, '社保 : 教育');
+  close(v.e_ss / v.e_other, b.e_ss / b.e_other, '社保 : 其它');
+  // 进入、离开这个规则时数字都不跳
+  const s2 = new Sim();
+  s2.set('t_vat', b.t_vat * 1.1);
+  const before = { ...s2.values };
+  s2.setMode('y25', 'cut');
+  for (const id of flex) close(s2.values[`e_${id}`], before[`e_${id}`], `进入 ${id}`);
+  close(s2.values.k25, 1, '进入时系数为 1');
+  s2.set('t_cit', before.t_cit * 1.2);
+  const mid = { ...s2.values };
+  s2.setMode('y25', 'deficit');
+  for (const id of flex) close(s2.values[`e_${id}`], mid[`e_${id}`], `离开 ${id}`);
+});

@@ -20,7 +20,7 @@ export const MODE_OPTIONS = {
     options: {
       deficit: { label: '赤字锁定', desc: '赤字是人大批准的数；收支变化由"调入资金"吸收（动用结转结余、稳定调节基金）' },
       transfer: { label: '调入锁定', desc: '调入资金不变；收支变化全部反映为赤字（反事实：如果当年多借/少借）' },
-      cut: { label: '支出调整', desc: '赤字和调入资金都锁定；收入变化由"其它"支出吸收（反事实：少收就少花）' },
+      cut: { label: '支出调整', desc: '赤字和调入资金都锁定；收入的增减按各项支出的计划数等比例分摊（付息、补充稳定基金除外）。反事实：多收多花、少收少花，各项同比例' },
     },
   },
   c26: {
@@ -98,6 +98,9 @@ export const MODULES = {
   proj: { name: '十年推演', short: '推演', img: null },
 };
 
+// 2025"支出调整"时不参与等比例分摊的项：付息是合同义务，补充稳定基金是存起来的钱
+export const Y25_CUT_FIXED = ['int', 'stab'];
+
 // 切换平衡规则时，新出现的输入参数取什么值才能让当前数字保持不变
 export const CARRY = {
   dr26: (v) => v.d26 / v.gdp26,
@@ -107,6 +110,8 @@ export const CARRY = {
   f2_plan: (v) => v.f2_exp,
   f4_target: (v) => v.f4_bal,
   oth_pl: (v) => v.oth26,
+  // 进入 2025"支出调整"时，计划数取当前实际数（分摊系数 = 1，数字不跳）
+  ...Object.fromEntries(EXP_2025.filter((e) => !Y25_CUT_FIXED.includes(e.id)).map((e) => [`pe_${e.id}`, (v) => v[`e_${e.id}`]])),
 };
 
 /**
@@ -196,16 +201,23 @@ export function buildSpecs(modes = DEFAULT_MODES) {
     f('taxnet25', 'T_{net}', '税收收入（扣除出口退税）', 'tax25 - rebate', { src });
     f('rev25', 'R_{25}', '2025年一般公共预算收入', 'taxnet25 + nontax', { src, note: '一般公共预算收入 = 税收（扣退税）+ 非税收入。' });
 
+    const cut = M.y25 === 'cut';
     for (const e of EXP_2025) {
-      if (M.y25 === 'cut' && e.id === 'other') continue; // "支出调整"规则下"其它"是余项，见下
       // 国防支出同时是 2026 年国防的基数，不能取 0（增速无定义）
       const lo = e.id === 'def' ? Math.round(e.v * 0.2) : 0;
-      inp(`e_${e.id}`, `E_{${e.id}}`, e.name, e.v, { src, group: 'exp', short: e.short, range: [lo, Math.round(e.v * 2), 1] });
+      const range = [lo, Math.round(e.v * 2), 1];
+      if (cut && !Y25_CUT_FIXED.includes(e.id)) {
+        // "支出调整"：旋钮是计划数，实际数 = 计划数 × 分摊系数
+        inp(`pe_${e.id}`, `E^{plan}_{${e.id}}`, `${e.name}（计划数）`, e.v, { src, group: 'exp', short: e.short, range });
+        f(`e_${e.id}`, `E_{${e.id}}`, e.name, `pe_${e.id} * k25`, { src, group: 'exp', short: e.short, note: '支出调整：实际数 = 计划数 × 分摊系数。收入每多 1%，可分摊的支出按同一比例增加，各项占比不变。' });
+      } else {
+        inp(`e_${e.id}`, `E_{${e.id}}`, e.name, e.v, { src, group: 'exp', short: e.short, range });
+      }
     }
-    if (M.y25 === 'cut') {
-      const rest = EXP_2025.filter((e) => e.id !== 'other').map((e) => `e_${e.id}`);
-      f('e_other', 'E_{other}', '其它', `rev25 + def25 + tin25 - (${rest.join(' + ')})`, {
-        src, group: 'exp', short: '其它', note: '支出调整：赤字和调入资金都已锁定，收入加上它们就是能花的总数，列明各项之外剩下的就是"其它"。',
+    if (cut) {
+      const plans = EXP_2025.filter((e) => !Y25_CUT_FIXED.includes(e.id)).map((e) => `pe_${e.id}`);
+      f('k25', 'k_{25}', '2025年支出分摊系数', `(rev25 + def25 + tin25 - e_int - e_stab) / (${plans.join(' + ')})`, {
+        unit: 'num', note: '赤字和调入资金都已锁定，收入 + 赤字 + 调入就是能花的总数；扣掉刚性的付息和存进稳定基金的钱，剩下的按各项计划数等比例分摊。等于 1 表示各项都按计划执行；大于 1 表示多收的钱同比例多花。',
       });
     }
     f('exp25', 'E_{25}', '2025年一般公共预算支出', `sum(${EXP_2025.map((e) => `e_${e.id}`).join(', ')})`, {

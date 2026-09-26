@@ -3,7 +3,7 @@ import { h } from '../dom.js';
 import { renderSankey } from '../sankey-view.js';
 import { ledgerHTML } from '../common.js';
 import { TAXES_2025, EXP_2025 } from '../../model/data.js';
-import { TAX_IDS, EXP25_IDS } from '../../model/specs.js';
+import { TAX_IDS, EXP25_IDS, Y25_CUT_FIXED } from '../../model/specs.js';
 import { fmt } from '../../model/format.js';
 
 export function sankeyDef(app) {
@@ -122,7 +122,11 @@ export default function exec25(app) {
         { title: '税收（其余 10 项）', ids: TAX_IDS.slice(6) },
         { title: '出口退税与非税收入', ids: ['rebate', 'nontax'], open: true },
         { title: '赤字与调入资金', ids: ['def25', 'tin25', 'dl25'], open: true },
-        { title: '支出（13 类）', ids: EXP25_IDS },
+        // "支出调整"时旋钮是各项计划数，实际数随分摊系数一起变；面板每次重建时重新读取
+        {
+          get title() { return app.sim.modes.y25 === 'cut' ? '支出（13 类计划数 × 分摊系数）' : '支出（13 类）'; },
+          get ids() { return app.sim.modes.y25 === 'cut' ? ['k25', ...EXP_2025.map((e) => (Y25_CUT_FIXED.includes(e.id) ? `e_${e.id}` : `pe_${e.id}`))] : EXP25_IDS; },
+        },
         { title: '分税制：中央分享比例', ids: ['s_vat', 's_cit', 's_pit', 's_stamp', 's_imp', 's_con', 's_tar', 's_veh', 's_rb', 's_nt'] },
       ],
     },
